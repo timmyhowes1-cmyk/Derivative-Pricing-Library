@@ -23,11 +23,13 @@ The project was built to strengthen practical skills in:
 ## Repository Structure
 
 ```text
-.
-├── instruments/     # Option and derivative product definitions
-├── models/          # Model classes (e.g. Black-Scholes, Heston)
-├── engines/         # Pricing engines and numerical methods
-├── examples/        # Example scripts / notebooks
+
+├── instruments/      # Option and derivative product definitions
+├── numerical_schemes # Numerical approximation schemes (e.g. Euler, Milstein)
+├── models/           # Model classes (e.g. Black-Scholes, Heston)
+├── engines/          # Pricing engines and numerical methods
+├── main.py           # Script to run prices
+├── parameters.py     # Parameter settings for main script
 └── README.md
 ```
 
