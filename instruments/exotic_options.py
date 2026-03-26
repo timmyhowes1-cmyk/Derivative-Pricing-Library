@@ -21,8 +21,8 @@ class Asian(Option):
         if self.strike_type == "fixed":
             return np.maximum(avg - self.K, 0) if self.option_type == "call" \
                 else np.maximum(self.K - avg, 0)
-        return np.maximum(price_path[:, -1] - avg, 0) if self.option_type == "call" \
-            else np.maximum(avg - price_path[:, -1], 0)
+        return np.maximum(price_path[..., -1] - avg, 0) if self.option_type == "call" \
+            else np.maximum(avg - price_path[..., -1], 0)
 
 
 class Lookback(Option):
@@ -54,7 +54,7 @@ class Digital(Option):
     def payoff(self, price_path):
         self.raisePriceError(price_path)
         if isinstance(price_path, np.ndarray):
-            spot_price = price_path[:, -1]
+            spot_price = price_path[..., -1]
         else:
             spot_price = price_path
 
@@ -77,12 +77,21 @@ class Barrier(Option):
         extreme_price = np.max(price_path, axis=np.ndim(price_path)-1) if self.up \
             else np.min(price_path, axis=np.ndim(price_path)-1)
 
-        if self.up == self.out:
+        if self.up and self.out:
+            return extreme_price <= self.b
+        elif not self.up and not self.out:
             return extreme_price < self.b
-        return extreme_price > self.b
+        elif self.up and not self.out:
+            return extreme_price > self.b
+        else:
+            return extreme_price >= self.b
 
     def payoff(self, price_path):
         self.raisePriceError(price_path)
         flag = self._get_barrier_flag(price_path)
-        return flag * np.maximum(price_path[:, -1] - self.K, 0) if self.option_type == "call" \
-            else flag * np.maximum(self.K - price_path[:, -1], 0)
+        if isinstance(price_path, np.ndarray):
+            spot_price = price_path[..., -1]
+        else:
+            spot_price = price_path
+        return flag * np.maximum(spot_price - self.K, 0) if self.option_type == "call" \
+            else flag * np.maximum(self.K - spot_price, 0)

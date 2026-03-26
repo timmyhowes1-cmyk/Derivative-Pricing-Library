@@ -7,7 +7,7 @@ class European(Option):
         self.raiseStrikeError()
 
         if isinstance(price_path, np.ndarray):
-            spot_price = price_path[:, -1]
+            spot_price = price_path[..., -1]
         else:
             spot_price = price_path
 
