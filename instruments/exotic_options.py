@@ -33,7 +33,6 @@ class Lookback(Option):
             return np.maximum(np.max(price_path, axis=1) - price_path[:, -1], 0) if self.option_type == "call" \
                 else np.maximum(price_path[:, -1] - np.min(price_path, axis=1), 0)
 
-
 class Digital(Option):
     def __init__(self, option_type, strike, expiry, cash_payoff=1, **kwargs):
         super().__init__(option_type, strike, expiry)
