@@ -3,6 +3,9 @@ from instruments.base import Option
 
 class European(Option):
     def payoff(self, price_path):
+        self.raisePriceError(price_path)
+        self.raiseStrikeError()
+
         if isinstance(price_path, np.ndarray):
             spot_price = price_path[:, -1]
         else:

@@ -7,11 +7,16 @@ class Asian(Option):
         self.average_type = average_type
         self.strike_type = strike_type
 
+        self.raiseStrikeError()
+
     def payoff(self, price_path):
+        if np.any(price_path < 0):
+            raise ValueError("Price path must be non-negative")
+
         if self.average_type == "arithmetic":
-            avg = np.mean(price_path, axis=1)
+            avg = np.mean(price_path, axis=np.ndim(price_path)-1)
         else:
-            avg = np.exp(np.mean(np.log(price_path), axis=1))
+            avg = np.exp(np.mean(np.log(price_path), axis=np.ndim(price_path)-1))
 
         if self.strike_type == "fixed":
             return np.maximum(avg - self.K, 0) if self.option_type == "call" \
@@ -25,20 +30,29 @@ class Lookback(Option):
         super().__init__(option_type, strike, expiry)
         self.strike_type = strike_type
 
-    def payoff(self, price_path):
         if self.strike_type == "fixed":
-            return np.maximum(np.max(price_path, axis=1) - self.K, 0) if self.option_type == "call" \
-                else np.maximum(self.K - np.min(price_path, axis=1), 0)
+            self.raiseStrikeError()
+
+    def payoff(self, price_path):
+        self.raisePriceError(price_path)
+        if self.strike_type == "fixed":
+            return np.maximum(np.max(price_path, axis=np.ndim(price_path)-1) - self.K, 0) if self.option_type == "call" \
+                else np.maximum(self.K - np.min(price_path, axis=np.ndim(price_path)-1), 0)
         else:
-            return np.maximum(np.max(price_path, axis=1) - price_path[:, -1], 0) if self.option_type == "call" \
-                else np.maximum(price_path[:, -1] - np.min(price_path, axis=1), 0)
+            return np.maximum(np.max(price_path, axis=np.ndim(price_path)-1) - price_path[:, -1], 0) if self.option_type == "call" \
+                else np.maximum(price_path[:, -1] - np.min(price_path, axis=np.ndim(price_path)-1), 0)
 
 class Digital(Option):
     def __init__(self, option_type, strike, expiry, cash_payoff=1, **kwargs):
         super().__init__(option_type, strike, expiry)
         self.cash_payoff = cash_payoff
 
+        self.raiseStrikeError()
+        if self.cash_payoff < 0:
+            raise ValueError("Cash payoff must be non-negative")
+
     def payoff(self, price_path):
+        self.raisePriceError(price_path)
         if isinstance(price_path, np.ndarray):
             spot_price = price_path[:, -1]
         else:
@@ -51,21 +65,24 @@ class Digital(Option):
 class Barrier(Option):
     def __init__(self, option_type, strike, expiry, b=None, up=True, out=True, **kwargs):
         super().__init__(option_type, strike, expiry)
-        self.b = b
+        self.b = self.K if b is None else b
         self.up = up
         self.out = out
+        self.raiseStrikeError()
+        if self.b < 0:
+            raise ValueError("Barrier must be non-negative")
+
 
     def _get_barrier_flag(self, price_path):
-        if self.b is None:
-            self.b = self.K
-        extreme_price = np.max(price_path, axis=1) if self.up \
-            else np.min(price_path, axis=1)
+        extreme_price = np.max(price_path, axis=np.ndim(price_path)-1) if self.up \
+            else np.min(price_path, axis=np.ndim(price_path)-1)
 
         if self.up == self.out:
             return extreme_price < self.b
         return extreme_price > self.b
 
     def payoff(self, price_path):
+        self.raisePriceError(price_path)
         flag = self._get_barrier_flag(price_path)
         return flag * np.maximum(price_path[:, -1] - self.K, 0) if self.option_type == "call" \
             else flag * np.maximum(self.K - price_path[:, -1], 0)
