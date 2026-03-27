@@ -31,7 +31,7 @@ mc_heston_greeks = mc_engine.get_greeks(derivative, heston_model, greek_type=gre
 
 print("*** COMPARING ANALYTICAL VS MC ESTIMATES FOR EUROPEAN STYLE OPTION***\n")
 print("***PRICE***\n" +f"HESTON MODEL: {np.round(a_heston_price['value'], 4)} vs {np.round(mc_heston_price['value'], 4)} (std error = {np.round(mc_heston_price['std_error'], 4)})")
-print(f"BSM MODEL: {np.round(a_bsm_price['value'], 4)} vs {np.round(mc_heston_price['value'], 4)} (std error = {np.round(mc_heston_price['std_error'], 4)})\n")
+print(f"BSM MODEL: {np.round(a_bsm_price['value'], 4)} vs {np.round(mc_bsm_price['value'], 4)} (std error = {np.round(mc_bsm_price['std_error'], 4)})\n")
 print("***GREEKS***")
 for greek in greeks:
     print("HESTON MODEL " +greek.upper() +

@@ -177,19 +177,23 @@ class HestonAnalyticalEngine(Engine):
         _dC1 = lambda phi: (1j * (model.r - model.q) * phi
                             + (model.mean_vol**2 * model.reversion_speed / model.sigma**2)
                             * ((self.b[0] - model.correlation * model.sigma * 1j * phi + _d1(phi))
-                            - (2 * _g1(phi) * _d1(phi) * np.exp(instrument.T * _d1(phi)))
+                            + (2 * _g1(phi) * _d1(phi) * np.exp(instrument.T * _d1(phi)))
                                / (1 - _g1(phi) * np.exp(instrument.T * _d1(phi)))))
         _dC2 = lambda phi: (1j * (model.r - model.q) * phi
                             + (model.mean_vol**2 * model.reversion_speed / model.sigma**2)
                             * ((self.b[1] - model.correlation * model.sigma * 1j * phi + _d2(phi))
-                            - (2 * _g1(phi) * _d1(phi) * np.exp(instrument.T * _d1(phi)))
+                            + (2 * _g2(phi) * _d2(phi) * np.exp(instrument.T * _d2(phi)))
                                / (1 - _g2(phi) * np.exp(instrument.T * _d2(phi)))))
-        _dD1 = lambda phi: (((self.b[0] - model.correlation * model.sigma * 1j * phi + _d1(phi))
-                            * np.exp(instrument.T * _d1(phi)) * _d1(phi) * (_g1(phi) - 1))
-                            / ((model.sigma ** 2) * ((1 - _g1(phi) * np.exp(instrument.T * _d1(phi))) ** 2)))
-        _dD2 = lambda phi: (((self.b[1] - model.correlation * model.sigma * 1j * phi + _d2(phi))
-                            * np.exp(instrument.T * _d2(phi)) * _d2(phi) * (_g2(phi) - 1))
-                            / ((model.sigma ** 2) * ((1 - _g2(phi) * np.exp(instrument.T * _d2(phi))) ** 2)))
+        _dD1 = lambda phi: (
+                ((self.b[0] - model.correlation * model.sigma * 1j * phi + _d1(phi)) / model.sigma**2)
+                * ((-_d1(phi) * np.exp(instrument.T * _d1(phi)) * (1 - _g1(phi)))
+                    / ((1 - _g1(phi) * np.exp(instrument.T * _d1(phi))) ** 2))
+        )
+        _dD2 = lambda phi: (
+                ((self.b[1] - model.correlation * model.sigma * 1j * phi + _d2(phi)) / model.sigma ** 2)
+                * ((-_d2(phi) * np.exp(instrument.T * _d2(phi)) * (1 - _g2(phi)))
+                   / ((1 - _g2(phi) * np.exp(instrument.T * _d2(phi))) ** 2))
+        )
 
         _diff1 = lambda phi: _dC1(phi) + (model.vol ** 2) * _dD1(phi)
         _diff2 = lambda phi: _dC2(phi) + (model.vol ** 2) * _dD2(phi)
@@ -202,11 +206,11 @@ class HestonAnalyticalEngine(Engine):
         integral1 = quad(integrand1, self.phi_bounds[0], self.phi_bounds[1])[0]
         integral2 = quad(integrand2, self.phi_bounds[0], self.phi_bounds[1])[0]
 
-        term2 = (model.x0 * np.exp(-model.q * instrument.T) / np.pi * integral1
-               - instrument.K * np.exp(-model.r * instrument.T) / np.pi * integral2)
+        term2 = (model.x0 * np.exp(-model.q * instrument.T) * integral1 / np.pi
+               - instrument.K * np.exp(-model.r * instrument.T) * integral2 / np.pi)
 
         return term1 - term2 if instrument.option_type == "call" \
-            else term1 - term2 + model.r * instrument.K * np.exp(-model.r * instrument.T)
+            else term1 - term2 + model.r * instrument.K * np.exp(-model.r * instrument.T) - model.q * model.x0 * np.exp(-model.q * instrument.T)
 
     def calculate_gamma(self, instrument, model):
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) *
@@ -234,7 +238,7 @@ class HestonAnalyticalEngine(Engine):
 
         term = np.exp(-model.q * instrument.T) * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
 
-        return (2 * model.vol / np.pi) * term1
+        return (2 * model.vol / np.pi) * term
 
     @staticmethod
     def get_big_p(char_func, k, phi_bounds):
