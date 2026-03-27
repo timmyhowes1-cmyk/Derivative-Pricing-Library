@@ -1,14 +1,15 @@
 import pytest
 from instruments import European
-from models import Heston, BSM
+from engines.analytical import BSMAnalyticalEngine, HestonAnalyticalEngine
+from models import BSM, Heston
 
 @pytest.fixture
 def vanilla_call():
-    return EuropeanCall(strike=10, expiry=1, option_tye="call")
+    return European(strike=10, expiry=1, option_type="call")
 
 @pytest.fixture
 def vanilla_put():
-    return EuropeanCall(strike=10, expiry=1, option_tye="put")
+    return European(strike=10, expiry=1, option_type="put")
 
 @pytest.fixture
 def std_heston_model():
@@ -24,10 +25,28 @@ def std_heston_model():
     )
 
 @pytest.fixture
-def std_bs_model():
+def atm_bs_model():
     return BSM(
         x0=10,
         r=0.01,
-        q=0.0,
+        q=0.01,
         vol=0.2,
     )
+def otm_bs_model():
+    return BSM(
+        x0=7,
+        r=0.01,
+        q=0.01,
+        vol=0.2,
+    )
+def itm_bs_model():
+    return BSM(
+        x0=13,
+        r=0.01,
+        q=0.01,
+        vol=0.2,
+    )
+
+@pytest.fixture
+def bs_analytical_engine():
+    return BSMAnalyticalEngine(quiet=True)
