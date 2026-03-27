@@ -28,69 +28,69 @@ def test_heston_call_prices(vanilla_call, heston_analytical_engine, spot, expect
 )
 def test_heston_put_prices(vanilla_put, heston_analytical_engine, spot, expected):
     model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
-    price = heston_analytical_engine.get_price(vanilla_call, model)["value"]
+    price = heston_analytical_engine.get_price(vanilla_put, model)["value"]
     assert price == pytest.approx(expected, abs=1e-7)
 
 
-# @pytest.mark.parametrize(
-#     "greek, spot, expected",
-#     [
-#         ("delta", 7.0, 0.0456920740),
-#         ("delta", 10.0, 0.5344564605),
-#         ("delta", 13.0, 0.9118346204),
-#         ("vega", 7.0, 0.6703846629),
-#         ("vega", 10.0, 3.9300280364),
-#         ("vega", 13.0, 1.8953264658),
-#         ("rho", 7.0, 0.29528040199),
-#         ("rho", 10.0, 4.5559337320),
-#         ("rho", 13.0, 8.7838172469),
-#         ("theta", 7.0, -0.0667928251),
-#         ("theta", 10.0, -0.3851164949),
-#         ("theta", 13.0, -0.1588323184),
-#         ("gamma", 7.0, 0.0684065983),
-#         ("gamma", 10.0, 0.1965014018),
-#         ("gamma", 13.0, 0.0560747475),
-#         ("volga", 7.0, 10.6270227846),
-#         ("volga", 10.0, -0.1965014018),
-#         ("volga", 13.0, 16.2133350580),
-#         ("vanna", 7.0, 0.9018468047),
-#         ("vanna", 10.0, 0.1965014018),
-#         ("vanna", 13.0, -0.8833834708),
-#         (["delta", "volga"], 10, [0.5344564605, -0.1965014018])
-#     ],
-# )
-# def test_call_greeks(vanilla_call, bs_analytical_engine, greek, spot, expected):
-#     model = BSM(x0=spot, vol=0.2, r=0.01, q=0.01)
-#     greeks = bs_analytical_engine.get_greeks(vanilla_call, model, greek_type=greek)
-#     result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
-#     assert result == pytest.approx(expected, abs=1e-9)
+@pytest.mark.parametrize(
+    "greek, spot, expected",
+    [
+        ("delta", 7.0, 0.0117678953),
+        ("delta", 10.0, 0.5903153417),
+        ("delta", 13.0, 0.9115369723),
+        ("vega", 7.0, 0.0741983570),
+        ("vega", 10.0, 1.6758945423),
+        ("vega", 13.0, 0.8962149682),
+        ("rho", 7.0, 0.0789115807),
+        ("rho", 10.0, 5.1491565204),
+        ("rho", 13.0, 8.7204815769),
+        ("theta", 7.0, -0.0667928251),
+        ("theta", 10.0, -0.3851164949),
+        ("theta", 13.0, -0.1588323184),
+        ("gamma", 7.0, 0.0352126738),
+        ("gamma", 10.0, 0.2055909450),
+        ("gamma", 13.0, 0.0420334135),
+        ("volga", 7.0, 1.4638469885),
+        ("volga", 10.0, 4.9596869909),
+        ("volga", 13.0, 4.5148142034),
+        ("vanna", 7.0, 3.3669714229),
+        ("vanna", 10.0, -4.6983879437),
+        ("vanna", 13.0, 0.8279650242),
+        (["delta", "volga"], 10, [0.5903153417, 4.9596869909])
+    ],
+)
+def test_heston_call_greeks(vanilla_call, heston_analytical_engine, greek, spot, expected):
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    greeks = heston_analytical_engine.get_greeks(vanilla_call, model, greek_type=greek)
+    result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
+    assert result == pytest.approx(expected, abs=1e-7)
 #
-# @pytest.mark.parametrize(
-#     "greek, spot, expected",
-#     [
-#         ("delta", 7.0, -0.9443577597),
-#         ("delta", 10.0, -0.4555933732),
-#         ("delta", 13.0, -0.0782152133),
-#         ("vega", 7.0, 0.6703846629),
-#         ("vega", 10.0, 3.9300280364),
-#         ("vega", 13.0, 1.8953264658),
-#         ("rho", 7.0, -9.6052179356),
-#         ("rho", 10.0, -5.3445646055),
-#         ("rho", 13.0, -1.1166810906),
-#         ("gamma", 7.0, 0.0684065983),
-#         ("gamma", 10.0, 0.1965014018),
-#         ("gamma", 13.0, 0.0560747475),
-#         ("volga", 7.0, 10.6270227846),
-#         ("volga", 10.0, -0.1965014018),
-#         ("volga", 13.0, 16.2133350580),
-#         ("vanna", 7.0, 0.9018468047),
-#         ("vanna", 10.0, 0.1965014018),
-#         ("vanna", 13.0, -0.8833834708),
-#         (["delta", "volga"], 10, [-0.4555933732, -0.1965014018])
-#     ],
-# )
-# def test_put_greeks(vanilla_put, bs_analytical_engine, greek, spot, expected):
-#     model = BSM(x0=spot, vol=0.2, r=0.01, q=0.01)
-#     greeks = bs_analytical_engine.get_greeks(vanilla_put, model, greek_type=greek)
-#     result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
-#     assert result == pytest.approx(expected, abs=1e-9)
+@pytest.mark.parametrize(
+    "greek, spot, expected",
+    [
+        ("delta", 7.0, -0.9782819385),
+        ("delta", 10.0, -0.3997344920),
+        ("delta", 13.0, -0.0785128614),
+        ("vega", 7.0, 0.0741983570),
+        ("vega", 10.0, 1.6758945423),
+        ("vega", 13.0, 0.8962149682),
+        ("rho", 7.0, -9.8215867568),
+        ("rho", 10.0, -4.7513418171),
+        ("rho", 13.0, -1.1800167605),
+        ("gamma", 7.0, 0.0352126738),
+        ("gamma", 10.0, 0.2055909450),
+        ("gamma", 13.0, 0.0420334135),
+        ("volga", 7.0, 1.4638469885),
+        ("volga", 10.0, 4.9596869909),
+        ("volga", 13.0, 4.5148142034),
+        ("vanna", 7.0, 3.3669714229),
+        ("vanna", 10.0, -4.6983879437),
+        ("vanna", 13.0, 0.8279650242),
+        (["delta", "volga"], 10, [-0.3997344920, -4.6983879437])
+    ],
+)
+def test_heston_put_greeks(vanilla_put, heston_analytical_engine, greek, spot, expected):
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    greeks = heston_analytical_engine.get_greeks(vanilla_put, model, greek_type=greek)
+    result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
+    assert result == pytest.approx(expected, abs=1e-7)

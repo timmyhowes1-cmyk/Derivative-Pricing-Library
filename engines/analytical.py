@@ -229,19 +229,12 @@ class HestonAnalyticalEngine(Engine):
 
     def calculate_vanna(self, instrument, model):
         _d1 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[0], self.u[0])
-        _d2 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[1], self.u[1])
 
-        integrand1 = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) *
-                                  (1 + model.x0 / (1j * phi)) *
-                                 self.char_func1(phi) * _d1(phi)).real
+        integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (1j * phi) * self.char_func1(phi) * _d1(phi)).real
 
-        term1 = np.exp(-model.q * instrument.T) * quad(integrand1, self.phi_bounds[0], self.phi_bounds[1])[0]
+        term = np.exp(-model.q * instrument.T) * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
 
-        integrand2 = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) *
-                                  self.char_func2(phi) * _d2(phi)).real
-        term2 = np.exp(-model.r * instrument.T) * (instrument.K / model.x0) * quad(integrand2, self.phi_bounds[0], self.phi_bounds[1])[0]
-
-        return (2 * model.vol / np.pi) * (term1 - term2)
+        return (2 * model.vol / np.pi) * term1
 
     @staticmethod
     def get_big_p(char_func, k, phi_bounds):

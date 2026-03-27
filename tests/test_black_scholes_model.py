@@ -12,7 +12,7 @@ from engines.analytical import BSMAnalyticalEngine
         (13.0, 3.0700328188),
     ],
 )
-def test_bs_call_prices(vanilla_call, heston_analytical_engine, spot, expected):
+def test_bs_call_prices(vanilla_call, bs_analytical_engine, spot, expected):
     model = BSM(x0=spot, vol=0.2, r=0.01, q=0.01)
     price = bs_analytical_engine.get_price(vanilla_call, model)["value"]
     assert price == pytest.approx(expected, abs=1e-9)
