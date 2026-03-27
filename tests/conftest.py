@@ -16,32 +16,18 @@ def std_heston_model():
     return Heston(
         x0=10,
         r=0.01,
-        q=0.0,
-        vol=np.sqrt(0.04),
-        mean_vol=np.sqrt(0.04),
-        kappa=2,
+        q=0.01,
+        vol=0.2,
+        mean_vol=0.2,
+        reversion_speed=2,
         sigma=0.3,
         correlation=-0.7,
     )
 
 @pytest.fixture
-def atm_bs_model():
+def std_bs_model():
     return BSM(
         x0=10,
-        r=0.01,
-        q=0.01,
-        vol=0.2,
-    )
-def otm_bs_model():
-    return BSM(
-        x0=7,
-        r=0.01,
-        q=0.01,
-        vol=0.2,
-    )
-def itm_bs_model():
-    return BSM(
-        x0=13,
         r=0.01,
         q=0.01,
         vol=0.2,
@@ -50,3 +36,7 @@ def itm_bs_model():
 @pytest.fixture
 def bs_analytical_engine():
     return BSMAnalyticalEngine(quiet=True)
+
+@pytest.fixture
+def heston_analytical_engine():
+    return HestonAnalyticalEngine(quiet=True)
