@@ -1,17 +1,12 @@
 import numpy as np
 from instruments.base import Option
 
-class European(Option):
+class Vanilla(Option):
     def payoff(self, price_path):
         self.raisePriceError(price_path)
         self.raiseStrikeError()
+        spot_to_use = self.get_payoff_spot(price_path)
+        return np.maximum(spot_to_use - self.K, 0) if self.call else np.maximum(self.K - spot_to_use, 0)
 
-        if isinstance(price_path, np.ndarray):
-            spot_price = price_path[..., -1]
-        else:
-            spot_price = price_path
 
-        if self.option_type == "call":
-            return np.maximum(spot_price - self.K, 0)
-        return np.maximum(self.K - spot_price, 0)
 

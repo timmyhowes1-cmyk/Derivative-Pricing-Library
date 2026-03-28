@@ -1,6 +1,10 @@
 import numpy as np
 from numerical_schemes import *
 
+def expanding_mean_axis1(x, arithmetic_mean=True):
+    n = np.arange(1, x.shape[1] + 1)
+    return np.cumsum(x, axis=1) / n if arithmetic_mean else np.exp(np.cumsum(np.log(x), axis=1) / n)
+
 def simpsons_rule(f, a, b, n=5000):
     if n % 2 != 0:
         raise ValueError("Number of intervals 'n' must be even.")
@@ -14,6 +18,41 @@ def simpsons_rule(f, a, b, n=5000):
     integral += 2 * np.sum(y[2:-1:2])
 
     return (h / 3) * integral
+
+def fit_continuation_lstsq(x, y, deg=2, ridge=0):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    good = np.isfinite(x) & np.isfinite(y)
+    x = x[good]
+    y = y[good]
+
+    if len(x) < deg + 1:
+        return None
+
+    x_mean = x.mean()
+    x_std = x.std()
+
+    if x_std < 1e-12:
+        return None
+
+    z = (x - x_mean) / x_std
+    X = np.column_stack([z**k for k in range(deg + 1)])
+
+    if ridge > 0:
+        A = X.T @ X + ridge * np.eye(X.shape[1])
+        b = X.T @ y
+        beta = np.linalg.solve(A, b)
+    else:
+        beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+
+    def predict(x_new):
+        x_new = np.asarray(x_new, dtype=float)
+        z_new = (x_new - x_mean) / x_std
+        X_new = np.column_stack([z_new**k for k in range(deg + 1)])
+        return X_new @ beta
+
+    return predict
 
 def generate_standard_normal(size):
     rng = np.random.default_rng()

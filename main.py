@@ -5,7 +5,7 @@ from parameters import *
 from utils.math_utils import *
 
 # setup models
-derivative = European(**params_derivative)
+derivative = Vanilla(**params_derivative)
 bsm_model = BSM(**params_bsm)
 heston_model = Heston(**params_heston)
 

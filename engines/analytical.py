@@ -5,15 +5,13 @@ from scipy.stats import norm
 from models import *
 from utils.math_utils import simpsons_rule
 
-
 class BSMAnalyticalEngine(Engine):
-
     def get_price(self, instrument, model):
 
         print("*** BSM ANALYTICAL MODEL ***\nCALCULATING PRICE...\n") if self.quiet is False else None
         d1, d2 = self._calculate_d1_d2(instrument, model)
 
-        if instrument.option_type == "call":
+        if instrument.call:
             return {"value": (np.exp(-model.q * instrument.T) * model.x0 * norm.cdf(d1)
                     - np.exp(-model.r * instrument.T) * instrument.K * norm.cdf(d2))}
         return {"value": (instrument.K * np.exp(-model.r * instrument.T) * norm.cdf(-d2)
@@ -44,7 +42,7 @@ class BSMAnalyticalEngine(Engine):
 
     @staticmethod
     def calculate_delta(d, instrument, model):
-        return np.exp(-model.q * instrument.T) * norm.cdf(d[0]) if instrument.option_type == "call" else -np.exp(-model.q * instrument.T) * norm.cdf(-d[0])
+        return np.exp(-model.q * instrument.T) * norm.cdf(d[0]) if instrument.call else -np.exp(-model.q * instrument.T) * norm.cdf(-d[0])
 
     @staticmethod
     def calculate_vega(d, instrument, model):
@@ -52,12 +50,12 @@ class BSMAnalyticalEngine(Engine):
 
     @staticmethod
     def calculate_rho(d, instrument, model):
-        return (instrument.T * instrument.K * np.exp(-model.r * instrument.T) * norm.cdf(d[1]) if instrument.option_type=="call"
+        return (instrument.T * instrument.K * np.exp(-model.r * instrument.T) * norm.cdf(d[1]) if instrument.call
                 else -instrument.T * instrument.K * np.exp(-model.r * instrument.T) * norm.cdf(-d[1]))
 
     @staticmethod
     def calculate_theta(d, instrument, model):
-        if instrument.option_type == "call":
+        if instrument.call:
             return (-norm.pdf(d[0]) * (model.x0 * model.vol * np.exp(-model.q * instrument.T)) / (2 * np.sqrt(instrument.T))
                       - model.r * instrument.K * np.exp(-model.r * instrument.T) * norm.cdf(d[1])
                       + model.q * model.x0 * np.exp(-model.q * instrument.T) * norm.cdf(d[0]))
@@ -120,7 +118,7 @@ class HestonAnalyticalEngine(Engine):
         self.setup_heston_params(instrument, model)
         p_call = model.x0 * np.exp(-model.q * instrument.T) * self.p1 - instrument.K * np.exp(-model.r * instrument.T) * self.p2
 
-        return {"value": p_call} if instrument.option_type == "call" \
+        return {"value": p_call} if instrument.call \
             else {"value": p_call - model.x0 * np.exp(-model.q * instrument.T) + instrument.K * np.exp(-model.r * instrument.T)}
 
     def get_greeks(self, instrument, model, greek_type="delta"):
@@ -144,7 +142,7 @@ class HestonAnalyticalEngine(Engine):
         return greeks
 
     def calculate_delta(self, instrument, model):
-        return (np.exp(-model.q * instrument.T) * self.p1 if instrument.option_type=="call"
+        return (np.exp(-model.q * instrument.T) * self.p1 if instrument.call
                 else np.exp(-model.q * instrument.T) * (self.p1 - 1))
 
     def calculate_vega(self, instrument, model):
@@ -161,7 +159,7 @@ class HestonAnalyticalEngine(Engine):
         return 2 * model.vol * quad(integrand, bound_up, bound_dn)[0] / np.pi
 
     def calculate_rho(self, instrument, model):
-        return (instrument.K * instrument.T * np.exp(-model.r * instrument.T) * self.p2 if instrument.option_type == "call"
+        return (instrument.K * instrument.T * np.exp(-model.r * instrument.T) * self.p2 if instrument.call
                 else -instrument.K * instrument.T * np.exp(-model.r * instrument.T) * (1 - self.p2))
 
     def calculate_theta(self, instrument, model):
@@ -209,7 +207,7 @@ class HestonAnalyticalEngine(Engine):
         term2 = (model.x0 * np.exp(-model.q * instrument.T) * integral1 / np.pi
                - instrument.K * np.exp(-model.r * instrument.T) * integral2 / np.pi)
 
-        return term1 - term2 if instrument.option_type == "call" \
+        return term1 - term2 if instrument.call \
             else term1 - term2 + model.r * instrument.K * np.exp(-model.r * instrument.T) - model.q * model.x0 * np.exp(-model.q * instrument.T)
 
     def calculate_gamma(self, instrument, model):

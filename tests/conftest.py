@@ -1,15 +1,15 @@
 import pytest
-from instruments import European
+from instruments import Vanilla
 from engines.analytical import BSMAnalyticalEngine, HestonAnalyticalEngine
 from models import BSM, Heston
 
 @pytest.fixture
 def vanilla_call():
-    return European(strike=10, expiry=1, option_type="call")
+    return Vanilla(strike=10, expiry=1, call=True, european=True)
 
 @pytest.fixture
 def vanilla_put():
-    return European(strike=10, expiry=1, option_type="put")
+    return Vanilla(strike=10, expiry=1, call=False, european=True)
 
 @pytest.fixture
 def std_heston_model():

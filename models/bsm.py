@@ -9,10 +9,10 @@ class BSM(Model):
         self.q = q
 
 
-    def generate_paths(self, iterations, timestep, expiry, dw=None):
+    def generate_paths(self, iterations, timestep, expiry, dw=None, antithetic_variates=False):
         t = np.linspace(0, expiry, int(round(expiry / timestep)) + 1)
         if dw is None:
-            dw = generate_wiener_increments(iterations, timestep, expiry)
+            dw = generate_wiener_increments(iterations, timestep, expiry, antithetic_variates=antithetic_variates)
         w = np.zeros((dw.shape[0], dw.shape[1] + 1))
         w[:, 1:] = np.cumsum(dw, axis=1)
 

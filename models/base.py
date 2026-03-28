@@ -5,6 +5,6 @@ class Model(ABC):
         self.x0 = x0
 
     @abstractmethod
-    def generate_paths(self, iterations, timestep, expiry, dw=None):
+    def generate_paths(self, iterations, timestep, expiry, dw=None, antithetic_variates=False):
         pass
 

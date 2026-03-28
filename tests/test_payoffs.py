@@ -14,7 +14,7 @@ from instruments import *
     ],
 )
 def test_european_call_payoff(spot, strike, expected):
-    option = European(strike=strike, expiry=1, option_type="call")
+    option = Vanilla(strike=strike, expiry=1, call=True, european=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 @pytest.mark.parametrize(
@@ -28,7 +28,7 @@ def test_european_call_payoff(spot, strike, expected):
     ],
 )
 def test_european_put_payoff(spot, strike, expected):
-    option = European(strike=strike, expiry=1, option_type="put")
+    option = Vanilla(strike=strike, expiry=1, call=False, european=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -43,7 +43,7 @@ def test_european_put_payoff(spot, strike, expected):
     ],
 )
 def test_asian_call_payoff(spot, strike, expected):
-    option = Asian(strike=strike, expiry=1, option_type="call")
+    option = Asian(strike=strike, expiry=1, call=True, european=True, arithmetic_mean=True, fixed_strike=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -57,7 +57,7 @@ def test_asian_call_payoff(spot, strike, expected):
     ],
 )
 def test_asian_put_payoff(spot, strike, expected):
-    option = Asian(strike=strike, expiry=1, option_type="put")
+    option = Asian(strike=strike, expiry=1, call=False, european=True, arithmetic_mean=True, fixed_strike=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -72,7 +72,7 @@ def test_asian_put_payoff(spot, strike, expected):
     ],
 )
 def test_lookback_call_payoff(spot, strike, expected):
-    option = Lookback(strike=strike, expiry=1, option_type="call")
+    option = Lookback(strike=strike, expiry=1, call=True, european=True, fixed_strike=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -86,7 +86,7 @@ def test_lookback_call_payoff(spot, strike, expected):
     ],
 )
 def test_lookback_put_payoff(spot, strike, expected):
-    option = Lookback(strike=strike, expiry=1, option_type="put")
+    option = Lookback(strike=strike, expiry=1, call=False, european=True, fixed_strike=True)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -102,7 +102,7 @@ def test_lookback_put_payoff(spot, strike, expected):
     ],
 )
 def test_digital_call_payoff(spot, strike, payoff, expected):
-    option = Digital(strike=strike, expiry=1, option_type="call", cash_payoff=payoff)
+    option = Digital(strike=strike, expiry=1, call=True, european=True, cash_payoff=payoff)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -117,7 +117,7 @@ def test_digital_call_payoff(spot, strike, payoff, expected):
     ],
 )
 def test_digital_put_payoff_scalar(spot, strike, payoff, expected):
-    option = Digital(strike=strike, expiry=1, option_type="put", cash_payoff=payoff)
+    option = Digital(strike=strike, expiry=1, call=False, european=True, cash_payoff=payoff)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -138,7 +138,7 @@ def test_digital_put_payoff_scalar(spot, strike, payoff, expected):
     ],
 )
 def test_barrier_call_payoff_scalar(spot, strike, barrier, up, out, expected):
-    option = Barrier(strike=strike, expiry=1, option_type="call", b=barrier, up=up, out=out)
+    option = Barrier(strike=strike, expiry=1, call=True, european=True, b=barrier, up=up, out=out)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -158,5 +158,5 @@ def test_barrier_call_payoff_scalar(spot, strike, barrier, up, out, expected):
     ],
 )
 def test_barrier_put_payoff_scalar(spot, strike, barrier, up, out, expected):
-    option = Barrier(strike=strike, expiry=1, option_type="put", b=barrier, up=up, out=out)
+    option = Barrier(strike=strike, expiry=1, call=False, european=True, b=barrier, up=up, out=out)
     assert option.payoff(spot) == pytest.approx(expected)

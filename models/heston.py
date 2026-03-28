@@ -16,10 +16,10 @@ class Heston(Model):
         self.price_scheme = price_scheme
         self.var_scheme = var_scheme
 
-    def generate_paths(self, iterations, timestep, expiry, dw=None):
+    def generate_paths(self, iterations, timestep, expiry, dw=None, antithetic_variates=False):
         if dw is None:
             dw = np.zeros((2, iterations, int(round(expiry / timestep))))
-            dw_array = generate_wiener_increments(iterations, timestep, expiry, correlation=self.correlation)
+            dw_array = generate_wiener_increments(iterations, timestep, expiry, correlation=self.correlation, antithetic_variates=antithetic_variates)
             dw[0], dw[1] = dw_array[0], dw_array[1]
 
         if self.sigma > 0:
