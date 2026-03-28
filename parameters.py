@@ -12,7 +12,7 @@ greek_bumps = {"delta": 0.01,
 params_derivative = {"strike": 10,
                      "expiry": 1,
                      "call": False,
-                     "european": True,
+                     "european": False,
                      "b": 12,
                      "up": True,
                      "out": True,
@@ -22,20 +22,29 @@ params_derivative = {"strike": 10,
                      }
 
 # MC parameters
-params_MC = {"iterations": int(1e5), "timestep": 1/252,
+params_MC = {"iterations": int(1e4), "timestep": 1/252,
              "greek_bump_size" : [greek_bumps[g] for g in greek_bumps],
              "antithetic_variates":True, "quiet": True}
 
+# parameters for tree pricing
+params_tree = {
+    "up_factor": np.exp(np.sqrt(1/252) * 0.2),
+    "down_factor": np.exp(-np.sqrt(1/252) * 0.2),
+    "greek_bump_size" : [greek_bumps[g] for g in greek_bumps],
+    "timestep": 1/252,
+    "quiet": True
+}
+
 # parameters for BSM
 params_bsm = {
-    "x0": 11,
+    "x0": 8,
     "r": 0.03,
     "vol": 0.2,
     "q": 0.02
 }
 
 #parameters for option pricing under Heston model
-params_heston = {"x0": 11,
+params_heston = {"x0": 8,
                  "r": 0.03,
                  "vol": 0.2,
                  "q": 0.02,

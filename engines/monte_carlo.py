@@ -72,7 +72,6 @@ class MonteCarloEngine(Engine):
 
                     itm_idx = np.where(itm)[0][good]
                     stop_time_idx[itm_idx[early_exercise]] = i
-
         return np.exp(-model.r * stop_time_idx * timestep) * exercise_payoffs[np.arange(self.iterations), stop_time_idx]
 
     def _generic_first_order_greek(self, instrument, model, attribute, bump_size, dw=None, paths=None):
