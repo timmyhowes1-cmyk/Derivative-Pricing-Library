@@ -1,7 +1,7 @@
 import pytest
 from instruments import Vanilla
-from engines.analytical import BSMAnalyticalEngine, HestonAnalyticalEngine
-from models import BSM, Heston
+from engines.analytical import *
+from models import *
 
 @pytest.fixture
 def vanilla_call():
@@ -40,3 +40,8 @@ def bs_analytical_engine():
 @pytest.fixture
 def heston_analytical_engine():
     return HestonAnalyticalEngine(quiet=True)
+
+@pytest.fixture
+def binomial_tree():
+    BinomialTree(timestep=1/252, quiet=True)
+

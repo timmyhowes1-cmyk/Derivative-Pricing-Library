@@ -18,6 +18,8 @@ class BSM(Model):
 
         return self.x0 * np.exp((self.r - self.q - (self.vol ** 2) / 2) * np.tile(t, (iterations, 1)) + self.vol * w)
 
+    def get_tree_factors(self, timestep):
+        return np.exp(self.vol * np.sqrt(timestep)), np.exp(-self.vol * np.sqrt(timestep))
 
 
 

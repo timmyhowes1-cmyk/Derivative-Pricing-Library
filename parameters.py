@@ -12,7 +12,7 @@ greek_bumps = {"delta": 0.01,
 params_derivative = {"strike": 10,
                      "expiry": 1,
                      "call": False,
-                     "european": False,
+                     "european": True,
                      "b": 12,
                      "up": True,
                      "out": True,
@@ -28,10 +28,8 @@ params_MC = {"iterations": int(1e4), "timestep": 1/252,
 
 # parameters for tree pricing
 params_tree = {
-    "up_factor": np.exp(np.sqrt(1/252) * 0.2),
-    "down_factor": np.exp(-np.sqrt(1/252) * 0.2),
     "greek_bump_size" : [greek_bumps[g] for g in greek_bumps],
-    "timestep": 1/252,
+    "timestep": 1/100,
     "quiet": True
 }
 

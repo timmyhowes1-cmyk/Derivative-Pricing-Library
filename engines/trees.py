@@ -2,16 +2,15 @@ from engines.base import Engine
 import numpy as np
 import copy
 
-class Binomial(Engine):
-    def __init__(self, up_factor, down_factor, greek_bump_size=0.01, timestep=1/252, quiet=False):
-        self.up = up_factor
-        self.down = down_factor
+# only compatible with BSM model and non pathwise dependent payoffs
+class BinomialTree(Engine):
+    def __init__(self, greek_bump_size=0.01, timestep=1/252, quiet=False):
         self.greek_bump_size = greek_bump_size
         self.timestep = timestep
         self.quiet=quiet
 
-    def get_risk_neutral_prob(self, model):
-        p1 = (np.exp(self.timestep * (model.r - model.q)) - self.down) / (self.up - self.down)
+    def get_risk_neutral_prob(self, model, up, down):
+        p1 = (np.exp(self.timestep * (model.r - model.q)) - down) / (up - down)
         p2 = 1 - p1
         return p1, p2
 
@@ -19,19 +18,21 @@ class Binomial(Engine):
         assert instrument.__class__.__name__ in ["Vanilla", "Digital"], "Tree pricing only for non path-dependent payoffs"
         n = int(np.round(instrument.T / self.timestep))
         j = np.arange(n + 1)
-        p1, p2 = self.get_risk_neutral_prob(model)
+        up, down = model.get_tree_factors(self.timestep)
+        p1, p2 = self.get_risk_neutral_prob(model, up, down)
 
-        terminal_x = model.x0 * (self.up ** j) * (self.down ** (n - j))
-        price = instrument.payoff(terminal_x)
+        terminal_x = model.x0 * (up ** j) * (down ** (n - j))
+        price = np.atleast_1d(instrument.payoff(terminal_x))
         discount_factor = np.exp(-model.r * self.timestep)
 
         for i in range(n - 1, -1, -1):
+            assert np.ndim(price) == 1
             if instrument.european:
                 price = discount_factor * (p1 * price[1:(i + 2)] + p2 * price[0:(i + 1)])
             else:
                 j = np.arange(i + 1)
-                x = model.x0 * (self.up ** j) * (self.down ** (i - j))
-                price = np.maximum(discount_factor * (p1 * price[1:i + 2] + p2 * price[0:i + 1]), instrument.payoff(x))
+                x = model.x0 * (up ** j) * (down ** (i - j))
+                price = np.maximum(discount_factor * (p1 * price[1:(i + 2)] + p2 * price[0:(i + 1)]), instrument.payoff(x))
 
         return {"value": price[0]}
 

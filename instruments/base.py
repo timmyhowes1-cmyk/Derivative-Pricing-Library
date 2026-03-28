@@ -23,7 +23,7 @@ class Option(ABC):
             raise ValueError("Price path must be non-negative")
 
     def get_payoff_spot(self, price_path):
-        if isinstance(price_path, np.ndarray):
+        if isinstance(price_path, np.ndarray) and np.ndim(price_path) >= 2 and price_path.shape[1] > 0:
             return price_path[..., -1] if self.european else price_path
         return price_path
 
