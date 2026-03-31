@@ -28,6 +28,7 @@ The project was built to strengthen practical skills in:
 ├── numerical_schemes # Numerical approximation schemes (e.g. Euler, Milstein)
 ├── models/           # Model classes (e.g. Black-Scholes, Heston)
 ├── engines/          # Pricing engines and numerical methods
+├── tests/
 ├── main.py           # Script to run prices
 ├── parameters.py     # Parameter settings for main script
 └── README.md
