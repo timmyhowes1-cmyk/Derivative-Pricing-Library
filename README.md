@@ -24,10 +24,11 @@ The project was built to strengthen practical skills in:
 
 ```text
 
-├── instruments/      # Option and derivative product definitions
+├── instruments/      # Option and derivative payoff definitions
 ├── numerical_schemes # Numerical approximation schemes (e.g. Euler, Milstein)
 ├── models/           # Model classes (e.g. Black-Scholes, Heston)
 ├── engines/          # Pricing engines and numerical methods
+├── term_structures/  # Yield curve functionality for rates
 ├── tests/
 ├── main.py           # Script to run prices
 ├── parameters.py     # Parameter settings for main script
