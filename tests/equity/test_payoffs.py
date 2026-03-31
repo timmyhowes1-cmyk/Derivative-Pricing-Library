@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from instruments import *
+from instruments.equity import *
 
 ### EUROPEAN VANILLA OPTION PAYOFFS
 @pytest.mark.parametrize(

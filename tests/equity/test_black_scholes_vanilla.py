@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from instruments import *
-from models.bsm import BSM
-from engines.analytical import BSMAnalyticalEngine
+from instruments.equity import *
+from models.equity.bsm import BSM
+from engines.equity.analytical import BSMAnalyticalEngine
 
 @pytest.mark.parametrize(
     "spot, expected",

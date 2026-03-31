@@ -1,8 +1,9 @@
 import numpy as np
-from instruments.base import Option
+from instruments.equity.base import EquityOption
+from typing import Union
 
-class Vanilla(Option):
-    def payoff(self, price_path):
+class Vanilla(EquityOption):
+    def payoff(self, price_path:Union[float, np.ndarray]):
         self.raisePriceError(price_path)
         self.raiseStrikeError()
         spot_to_use = self.get_payoff_spot(price_path)

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from instruments import *
-from models.heston import Heston
-from engines.analytical import HestonAnalyticalEngine
+from instruments.equity import *
+from models.equity.heston import Heston
+from engines.equity.analytical import HestonAnalyticalEngine
 
 @pytest.mark.parametrize(
     "spot, expected",

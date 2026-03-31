@@ -32,5 +32,4 @@ tree_greeks = tree_engine.get_greeks(derivative, bsm_model, greek_type=greeks)
 mc_bsm_greeks = mc_engine.get_greeks(derivative, bsm_model, greek_type=greeks)
 mc_heston_greeks = mc_engine.get_greeks(derivative, heston_model, greek_type=greeks)
 
-
 print(a_bsm_price["value"], tree_price["value"], mc_bsm_price["value"])

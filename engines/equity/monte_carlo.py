@@ -1,18 +1,21 @@
 from scipy.spatial.distance import correlation
-from engines.base import Engine
+from engines.equity import Engine
+from models.equity import Model
+from instruments.equity import EquityOption
 from utils.math_utils import *
 import copy
 import numpy as np
+from typing import Union
 
 class MonteCarloEngine(Engine):
-    def __init__(self, iterations=1e4, timestep=1/252, greek_bump_size=0.01, quiet=False, antithetic_variates=False):
+    def __init__(self, iterations:float=1e4, timestep:float=1/252, greek_bump_size:Union[float, np.ndarray]=0.01, quiet:bool=False, antithetic_variates:bool=False):
         super().__init__(quiet)
         self.iterations = iterations
         self.timestep = timestep
         self.greek_bump_size = greek_bump_size
         self.antithetic_variates = antithetic_variates
 
-    def get_price(self, instrument, model):
+    def get_price(self, instrument:EquityOption, model:Model):
         print(f"*** {model.__class__.__name__.upper()} MC MODEL ***\nCALCULATING PRICE...\n") if self.quiet is False else None
         paths = model.generate_paths(self.iterations, self.timestep, instrument.T, dw=None, antithetic_variates=self.antithetic_variates)
         if instrument.european:
@@ -22,7 +25,7 @@ class MonteCarloEngine(Engine):
 
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
-    def get_greeks(self, instrument, model, greek_type="delta"):
+    def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
         print(f"*** {model.__class__.__name__.upper()} MC MODEL ***\nCALCULATING GREEKS...\n") if self.quiet is False else None
         corr = getattr(model, 'correlation', None)
         dw = generate_wiener_increments(self.iterations, self.timestep, instrument.T, correlation=corr, antithetic_variates=self.antithetic_variates)
@@ -44,7 +47,7 @@ class MonteCarloEngine(Engine):
         print("\n") if self.quiet is False else None
         return greeks
 
-    def get_ls_american_values(self, instrument, model, paths, deg=2):
+    def get_ls_american_values(self, instrument:EquityOption, model:Model, paths:np.ndarray, deg:int=2):
         n_timestep = paths.shape[-1] - 1
         timestep = instrument.T / n_timestep
         stop_time_idx = np.array([n_timestep-1] * self.iterations)
@@ -74,7 +77,7 @@ class MonteCarloEngine(Engine):
                     stop_time_idx[itm_idx[early_exercise]] = i
         return np.exp(-model.r * stop_time_idx * timestep) * exercise_payoffs[np.arange(self.iterations), stop_time_idx]
 
-    def _generic_first_order_greek(self, instrument, model, attribute, bump_size, dw=None, paths=None):
+    def _generic_first_order_greek(self, instrument:EquityOption, model:Model, attribute:str, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         dw, paths = self._ensure_paths(instrument, model, dw=dw, paths=paths)
 
         def get_p(param_adj):
@@ -95,7 +98,7 @@ class MonteCarloEngine(Engine):
 
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
-    def _generic_second_order_greek(self, instrument, model, attribute, bump_size, dw=None, paths=None):
+    def _generic_second_order_greek(self, instrument:EquityOption, model:Model, attribute:str, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         dw, paths = self._ensure_paths(instrument, model, dw=dw, paths=paths)
 
         def get_p(param_adj):
@@ -117,19 +120,19 @@ class MonteCarloEngine(Engine):
         samples = (p_up - 2 * p_0 + p_down) / (bump_size ** 2)
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
-    def calculate_delta(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_delta(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING DELTA... ") if self.quiet is False else None
         return self._generic_first_order_greek(instrument, model, "x0", bump_size, dw, paths)
 
-    def calculate_vega(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_vega(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING VEGA... ") if self.quiet is False else None
         return self._generic_first_order_greek(instrument, model, "vol", bump_size, dw, paths)
 
-    def calculate_rho(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_rho(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING RHO... ") if self.quiet is False else None
         return self._generic_first_order_greek(instrument, model, "r", bump_size, dw, paths)
 
-    def calculate_theta(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_theta(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING THETA... ") if self.quiet is False else None
         timestep = bump_size if bump_size is not None else self.timestep
         if abs(timestep - self.timestep) > 1e-10:
@@ -155,15 +158,15 @@ class MonteCarloEngine(Engine):
         samples = (p1 - p0) / timestep
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(samples.shape[0])}
 
-    def calculate_gamma(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_gamma(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING GAMMA... ") if self.quiet is False else None
         return self._generic_second_order_greek(instrument, model, "x0", bump_size, dw=dw, paths=paths)
 
-    def calculate_volga(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_volga(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING VOLGA... ") if self.quiet is False else None
         return self._generic_second_order_greek(instrument, model, "vol", bump_size, dw=dw, paths=paths)
 
-    def calculate_vanna(self, instrument, model, bump_size, dw=None, paths=None):
+    def calculate_vanna(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         print("CALCULATING VANNA... ") if self.quiet is False else None
         assert len(bump_size) == 2
         dw, _ = self._ensure_paths(instrument, model, dw=dw, paths=paths)
@@ -187,7 +190,7 @@ class MonteCarloEngine(Engine):
         samples = (p_uu - p_ud - p_du + p_dd) / (4 * bump_size[0] * bump_size[1])
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(samples.shape[0])}
 
-    def _ensure_paths(self, instrument, model, dw=None, paths=None):
+    def _ensure_paths(self, instrument:EquityOption, model:Model, dw:np.ndarray=None, paths:np.ndarray=None):
         """
         Ensures that both Wiener increments and paths are available.
         Returns: (dw, paths)

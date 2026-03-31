@@ -1,20 +1,23 @@
-from engines.base import Engine
+from engines.equity import Engine
+from engines.equity import Model
+from instruments.equity import EquityOption
 import numpy as np
 import copy
+from typing import Union
 
 # only compatible with BSM model and non pathwise dependent payoffs
 class BinomialTree(Engine):
-    def __init__(self, greek_bump_size=0.01, timestep=1/252, quiet=False):
+    def __init__(self, greek_bump_size:Union[float, np.ndarray]=0.01, timestep:float=1/252, quiet:bool=False):
         self.greek_bump_size = greek_bump_size
         self.timestep = timestep
         self.quiet=quiet
 
-    def get_risk_neutral_prob(self, model, up, down):
+    def get_risk_neutral_prob(self, model:Model, up:float, down:float):
         p1 = (np.exp(self.timestep * (model.r - model.q)) - down) / (up - down)
         p2 = 1 - p1
         return p1, p2
 
-    def get_price(self, instrument, model):
+    def get_price(self, instrument:EquityOption, model:Model):
         assert instrument.__class__.__name__ in ["Vanilla", "Digital"], "Tree pricing only for non path-dependent payoffs"
         n = int(np.round(instrument.T / self.timestep))
         j = np.arange(n + 1)
@@ -36,7 +39,7 @@ class BinomialTree(Engine):
 
         return {"value": price[0]}
 
-    def get_greeks(self, instrument, model, greek_type="delta"):
+    def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
         print(f"*** {model.__class__.__name__.upper()} MC MODEL ***\nCALCULATING GREEKS...\n") if self.quiet is False else None
 
         greeks = {}
@@ -55,7 +58,7 @@ class BinomialTree(Engine):
         print("\n") if self.quiet is False else None
         return greeks
 
-    def _generic_first_order_greek(self, instrument, model, attribute, bump_size):
+    def _generic_first_order_greek(self, instrument:EquityOption, model:Model, attribute:str, bump_size:float):
         def get_p(param_adj):
             new_model = copy.deepcopy(model)
             current_val = getattr(new_model, attribute)
@@ -67,7 +70,7 @@ class BinomialTree(Engine):
 
         return (p_up - p_down) / (2 * bump_size)
 
-    def _generic_second_order_greek(self, instrument, model, attribute, bump_size):
+    def _generic_second_order_greek(self, instrument:EquityOption, model:Model, attribute:str, bump_size:float):
         p_0 = self.get_price(instrument, model)["value"]
         def get_p(param_adj):
             new_model = copy.deepcopy(model)
@@ -80,22 +83,22 @@ class BinomialTree(Engine):
 
         return (p_up - 2 * p_0 + p_down) / (bump_size ** 2)
 
-    def calculate_delta(self, instrument, model, bump_size):
+    def calculate_delta(self, instrument:EquityOption, model:Model, bump_size:float):
         return self._generic_first_order_greek(instrument, model, attribute="x0", bump_size=bump_size)
 
-    def calculate_vega(self, instrument, model, bump_size):
+    def calculate_vega(self, instrument:EquityOption, model:Model, bump_size:float):
         return self._generic_first_order_greek(instrument, model, attribute="vol", bump_size=bump_size)
 
-    def calculate_rho(self, instrument, model, bump_size):
+    def calculate_rho(self, instrument:EquityOption, model:Model, bump_size:float):
         return self._generic_first_order_greek(instrument, model, attribute="r", bump_size=bump_size)
 
-    def calculate_gamma(self, instrument, model, bump_size):
+    def calculate_gamma(self, instrument:EquityOption, model:Model, bump_size:float):
         return self._generic_second_order_greek(instrument, model, attribute="x0", bump_size=bump_size)
 
-    def calculate_volga(self, instrument, model, bump_size):
+    def calculate_volga(self, instrument:EquityOption, model:Model, bump_size:float):
         return self._generic_second_order_greek(instrument, model, attribute="vol", bump_size=bump_size)
 
-    def calculate_theta(self, instrument, model, **kwargs):
+    def calculate_theta(self, instrument:EquityOption, model:Model, **kwargs):
         new_instrument = copy.deepcopy(instrument)
         p_0 = self.get_price(instrument, model)["value"]
         new_instrument.T += -self.timestep
@@ -103,7 +106,7 @@ class BinomialTree(Engine):
 
         return (p_up - p_0) / self.timestep
 
-    def calculate_vanna(self, instrument, model, bump_size):
+    def calculate_vanna(self, instrument:EquityOption, model:Model, bump_size:float):
         def get_p(x0_adj, vol_adj):
             new_model = copy.deepcopy(model)
             new_model.x0 += x0_adj

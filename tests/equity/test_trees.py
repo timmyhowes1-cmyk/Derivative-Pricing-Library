@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 import math
-from instruments.vanilla_options import Vanilla
-from engines.trees import BinomialTree
-from engines.analytical import BSMAnalyticalEngine
-from models.bsm import BSM
+from instruments.equity import Vanilla
+from engines.equity.trees import BinomialTree
+from engines.equity.analytical import BSMAnalyticalEngine
+from models.equity.bsm import BSM
 
 cases = [
     (7, True),

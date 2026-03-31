@@ -1,7 +1,7 @@
 import pytest
-from instruments import Vanilla
-from engines.analytical import *
-from models import *
+from instruments.equity import Vanilla
+from engines.equity.analytical import *
+from models.equity import *
 
 @pytest.fixture
 def vanilla_call():

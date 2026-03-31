@@ -1,16 +1,18 @@
+from typing import Callable
+
 import utils.math_utils
 from numerical_schemes.base import NumericalScheme
 from utils.math_utils import *
 
 class Euler(NumericalScheme):
-    def __init__(self, x0, mu=0.01, sigma=0.01, f_drift=None, f_vol=None):
+    def __init__(self, x0:float, mu:float=0.01, sigma:float=0.01, f_drift=None, f_vol=None):
         super().__init__(x0)
         self.mu = mu
         self.sigma = sigma
         self.f_drift = f_drift if f_drift is not None else standard_drift_vol
         self.f_vol = f_vol if f_vol is not None else itself
 
-    def get_paths(self, dt, dw):
+    def get_paths(self, dt:float, dw:np.ndarray):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
 
@@ -23,7 +25,7 @@ class Euler(NumericalScheme):
         return x
 
 class Milstein(NumericalScheme):
-    def __init__(self, x0, mu, sigma, f_drift=None, f_vol=None, dvol_dx=None):
+    def __init__(self, x0:float, mu:float, sigma:float, f_drift=None, f_vol=None, dvol_dx=None):
         super().__init__(x0)
         self.mu = mu
         self.sigma = sigma
@@ -56,12 +58,12 @@ class Milstein(NumericalScheme):
         return (v1 - v2) / (2 * h)
 
 class EulerForPrices(NumericalScheme):
-    def __init__(self, x0, mu, sigma, **kwargs):
+    def __init__(self, x0:float, mu:float, sigma:float, **kwargs):
         super().__init__(x0)
         self.drift = mu
         self.vol = sigma
 
-    def get_paths(self, dt, dw):
+    def get_paths(self, dt:float, dw:np.ndarray):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
 
@@ -74,13 +76,13 @@ class EulerForPrices(NumericalScheme):
         return x
 
 class ModifiedMilsteinCIR(NumericalScheme):
-    def __init__(self, x0, a, reversion_speed, sigma):
+    def __init__(self, x0, a:float, reversion_speed:float, sigma:float):
         super().__init__(x0)
         self.a = a
         self.k = reversion_speed
         self.sigma = sigma
 
-    def get_paths(self, dt, dw):
+    def get_paths(self, dt:float, dw:np.ndarray):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
 
