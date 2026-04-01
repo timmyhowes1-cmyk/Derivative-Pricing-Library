@@ -1,7 +1,7 @@
 import datetime as dt
 from abc import ABC, abstractmethod
-from schedule import add_months
-from term_structure.date_conventions import DateConvention
+from term_structure.cashflow_schedule import add_months
+from term_structure.date_convention import DateConvention
 from term_structure.curves import YieldCurve
 
 class InterestRateIndex(ABC):
@@ -18,7 +18,7 @@ class InterestRateIndex(ABC):
         pass
 
 
-class IborIndex(InterestRateIndex):
+class Ibor(InterestRateIndex):
     def __init__(self, name, tenor_months, date_convention, forward_curve, fixing_days=0):
         super().__init__(name, date_convention, forward_curve)
         self.tenor_months = tenor_months
@@ -27,7 +27,7 @@ class IborIndex(InterestRateIndex):
     def maturity_date(self, start_date:dt.date):
         return add_months(start_date, self.tenor_months)
 
-    def forward_rate(self, start_date:dt.date, end_date:dt.date = None) -> float:
+    def forward_rate(self, start_date:dt.date, end_date:dt.date = None):
         if end_date is None:
             end_date = self.maturity_date(start_date)
 

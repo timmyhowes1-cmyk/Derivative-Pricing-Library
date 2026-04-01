@@ -1,5 +1,4 @@
 import numpy as np
-from numerical_schemes import *
 
 def expanding_mean_axis1(x, arithmetic_mean=True):
     n = np.arange(1, x.shape[1] + 1)
@@ -94,22 +93,10 @@ def cir_vol(sigma, x):
 def cir_vol_derivative(sigma, x):
     return 0.5 * sigma / np.sqrt(x)
 
-def create_scheme(scheme_name, *args, **kwargs):
-    # 1. Get all classes that inherit from NumericalScheme
-    subclasses = NumericalScheme.__subclasses__()
-
-    # 2. Find the one matching the string
-    for cls in subclasses:
-        if cls.__name__ == scheme_name:
-            # 3. Instantiate and return
-            return cls(*args, **kwargs)
-
-    # 4. Fallback if not found
-    raise ValueError(f"Scheme '{scheme_name}' not found. Options are: {[c.__name__ for c in subclasses]}")
-
 def format_for_scheme(param, shape):
     if isinstance(param, float) or isinstance(param, int):
         return param * np.ones(shape=shape)
     return param
+
 
 

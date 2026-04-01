@@ -4,7 +4,7 @@ from numerical_schemes import *
 from utils.math_utils import *
 
 class CIR(Model):
-    def __init__(self, x0, mean:float=0.04, reversion_speed:float=2.0, sigma:float=0.3):
+    def __init__(self, x0, mean:float=np.sqrt(0.2), reversion_speed:float=2.0, sigma:float=0.3):
         super().__init__(x0)
         self.theta = mean
         self.k = reversion_speed
@@ -18,15 +18,14 @@ class CIR(Model):
         assert scheme != "Euler" and scheme != "Milstein", "Euler and Milstein are not supported for CIR process."
         scheme_to_run = getattr(numerical_schemes, scheme)
 
-        return scheme_to_run(self.x0, a=self.theta * self.k, reversion_speed=self.k, sigma=self.sigma)
+        return scheme_to_run(x0=self.x0, a=self.theta * self.k, reversion_speed=self.k, sigma=self.sigma)
 
-    def generate_paths(self, iterations:int, timestep:float, expiry:float, scheme:float=ModifiedMilsteinCIR, dw:np.ndarray=None):
+    def generate_paths(self, iterations:int, timestep:float, expiry:float, dw:np.ndarray=None, antithetic_variates=False, scheme:float=ModifiedMilsteinCIR):
         if dw is None:
-            dw = generate_wiener_increments(iterations, timestep, expiry)
+            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, correlation=None, antithetic_variates=antithetic_variates)
 
-        scheme_to_use = self.setup_scheme(scheme)
-
-        return scheme_to_use.get_paths(timestep, dw)
+        scheme_to_use = self.setup_scheme(scheme=scheme)
+        return scheme_to_use.get_paths(dt=timestep, dw=dw)
 
 
 

@@ -1,11 +1,9 @@
-from typing import Callable
-
-import utils.math_utils
 from numerical_schemes.base import NumericalScheme
-from utils.math_utils import *
+from utils.math_utils import format_for_scheme, standard_drift_vol
+import numpy as np
 
 class Euler(NumericalScheme):
-    def __init__(self, x0:float, mu:float=0.01, sigma:float=0.01, f_drift=None, f_vol=None):
+    def __init__(self, x0, mu:float=0.01, sigma:float=0.01, f_drift=None, f_vol=None):
         super().__init__(x0)
         self.mu = mu
         self.sigma = sigma
@@ -17,7 +15,7 @@ class Euler(NumericalScheme):
         x[:, 0] = self.x0
 
         mu = format_for_scheme(self.mu, x.shape)
-        sigma = format_for_scheme(self.sigma, x.shape)
+        sigma = format_for_scheme(param=self.sigma, shape=x.shape)
 
         for i in range(1, x.shape[1]):
             x[:, i] = x[:, i-1] + self.f_drift(mu[:, i-1], x[:, i-1], i*dt) * dt + self.f_vol(sigma[:, i-1], x[:, i-1], i*dt) * dw[:, i-1]
@@ -25,7 +23,7 @@ class Euler(NumericalScheme):
         return x
 
 class Milstein(NumericalScheme):
-    def __init__(self, x0:float, mu:float, sigma:float, f_drift=None, f_vol=None, dvol_dx=None):
+    def __init__(self, x0, mu:float, sigma:float, f_drift=None, f_vol=None, dvol_dx=None):
         super().__init__(x0)
         self.mu = mu
         self.sigma = sigma
@@ -37,28 +35,28 @@ class Milstein(NumericalScheme):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
 
-        mu = format_for_scheme(self.mu, x.shape)
-        sigma = format_for_scheme(self.sigma, x.shape)
+        mu = format_for_scheme(param=self.mu, shape=x.shape)
+        sigma = format_for_scheme(param=self.sigma, shape=x.shape)
 
         for i in range(1, x.shape[1]):
-            b = self.f_drift(mu[:, i-1], x[:, i-1], t=i*dt)
-            v = self.f_vol(sigma[:, i-1], x=x[:, i-1], t=i*dt)
+            b = self.f_drift(mu=mu[:, i-1], x=x[:, i-1], t=i*dt)
+            v = self.f_vol(sigma=sigma[:, i-1], x=x[:, i-1], t=i*dt)
             if self.vol_derivative is not None:
-                db = self.vol_derivative(mu[:, i-1], x[:, i-1], t=i*dt)
+                db = self.vol_derivative(mu=mu[:, i-1], x=x[:, i-1], t=i*dt)
             else:
-                db = self.get_vol_x_derivative(x[:, i-1], t=i*dt)
+                db = self.get_vol_x_derivative(x=x[:, i-1], t=i*dt)
             x[:, i] = x[:, i-1] + b * dt + v * dw[:, i-1] + 0.5 * b * db * (dw[:, i-1] ** 2 - i * dt)
 
         return x
 
     def get_vol_x_derivative(self, x, t, h=1e-5):
-        v1 = self.f_vol(self.sigma, x+h, t)
-        v2 = self.f_vol(self.sigma, x-h, t)
+        v1 = self.f_vol(sigma=self.sigma, x=x+h, t=t)
+        v2 = self.f_vol(sigma=self.sigma, x=x-h, t=t)
 
         return (v1 - v2) / (2 * h)
 
 class EulerForPrices(NumericalScheme):
-    def __init__(self, x0:float, mu:float, sigma:float, **kwargs):
+    def __init__(self, x0, mu:float, sigma:float, **kwargs):
         super().__init__(x0)
         self.drift = mu
         self.vol = sigma
@@ -67,8 +65,8 @@ class EulerForPrices(NumericalScheme):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
 
-        drift = utils.math_utils.format_for_scheme(self.drift, x.shape)
-        vol = utils.math_utils.format_for_scheme(self.vol, x.shape)
+        drift = format_for_scheme(param=self.drift, shape=x.shape)
+        vol = format_for_scheme(param=self.vol, shape=x.shape)
 
         for i in range(1, x.shape[1]):
             x[:, i] = x[:, i-1] * np.exp((drift[:, i-1] - 0.5 * vol[:, i-1]**2) * dt + vol[:, i-1] * dw[:, i-1])

@@ -24,13 +24,12 @@ params_derivative = {"strike": 10,
 # MC parameters
 params_MC = {"iterations": int(1e4), "timestep": 1/252,
              "greek_bump_size" : [greek_bumps[g] for g in greek_bumps],
-             "antithetic_variates":True, "quiet": True}
+             "antithetic_variates":True}
 
 # parameters for tree pricing
 params_tree = {
     "greek_bump_size" : [greek_bumps[g] for g in greek_bumps],
     "timestep": 1/100,
-    "quiet": True
 }
 
 # parameters for BSM

@@ -8,28 +8,25 @@ import numpy as np
 from typing import Union
 
 class MonteCarloEngine(Engine):
-    def __init__(self, iterations:float=1e4, timestep:float=1/252, greek_bump_size:Union[float, np.ndarray]=0.01, quiet:bool=False, antithetic_variates:bool=False):
-        super().__init__(quiet)
+    def __init__(self, iterations:float=1e4, timestep:float=1/252, greek_bump_size:Union[float, np.ndarray]=0.01, antithetic_variates:bool=False):
         self.iterations = iterations
         self.timestep = timestep
         self.greek_bump_size = greek_bump_size
         self.antithetic_variates = antithetic_variates
 
     def get_price(self, instrument:EquityOption, model:Model):
-        print(f"*** {model.__class__.__name__.upper()} MC MODEL ***\nCALCULATING PRICE...\n") if self.quiet is False else None
-        paths = model.generate_paths(self.iterations, self.timestep, instrument.T, dw=None, antithetic_variates=self.antithetic_variates)
+        paths = model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=None, antithetic_variates=self.antithetic_variates)
         if instrument.european:
             samples = np.exp(-model.r * instrument.T) * instrument.payoff(paths)
         else:
-            samples = self.get_ls_american_values(instrument, model, paths)
+            samples = self.get_ls_american_values(instrument=instrument, model=model, paths=paths, deg=2)
 
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
     def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
-        print(f"*** {model.__class__.__name__.upper()} MC MODEL ***\nCALCULATING GREEKS...\n") if self.quiet is False else None
         corr = getattr(model, 'correlation', None)
-        dw = generate_wiener_increments(self.iterations, self.timestep, instrument.T, correlation=corr, antithetic_variates=self.antithetic_variates)
-        paths = model.generate_paths(self.iterations, self.timestep, instrument.T, dw=dw)
+        dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, correlation=corr, antithetic_variates=self.antithetic_variates)
+        paths = model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw, antithetic_variates=self.antithetic_variates)
 
         greeks = {}
         if isinstance(greek_type, str):
@@ -43,8 +40,7 @@ class MonteCarloEngine(Engine):
         for i in range(len(greek_type)):
             func_name = f"calculate_{greek_type[i]}"
             func = getattr(self, func_name)
-            greeks[greek_type[i]] = func(instrument, model, bump_size[i], dw, paths)
-        print("\n") if self.quiet is False else None
+            greeks[greek_type[i]] = func(instrument=instrument, model=model, bump_size=bump_size[i], dw=dw, paths=paths)
         return greeks
 
     def get_ls_american_values(self, instrument:EquityOption, model:Model, paths:np.ndarray, deg:int=2):
@@ -78,18 +74,18 @@ class MonteCarloEngine(Engine):
         return np.exp(-model.r * stop_time_idx * timestep) * exercise_payoffs[np.arange(self.iterations), stop_time_idx]
 
     def _generic_first_order_greek(self, instrument:EquityOption, model:Model, attribute:str, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        dw, paths = self._ensure_paths(instrument, model, dw=dw, paths=paths)
+        dw, paths = self._ensure_paths(instrument=instrument, model=model, dw=dw, paths=paths)
 
         def get_p(param_adj):
             new_model = copy.deepcopy(model)
             current_val = getattr(new_model, attribute)
             setattr(new_model, attribute, current_val + param_adj)
 
-            bumped_paths = new_model.generate_paths(self.iterations, self.timestep, instrument.T, dw=dw)
+            bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw)
             if instrument.european:
                 return np.exp(-new_model.r * instrument.T) * instrument.payoff(bumped_paths)
             else:
-                return self.get_ls_american_values(instrument, new_model, bumped_paths)
+                return self.get_ls_american_values(instrument=instrument, model=new_model, paths=bumped_paths)
 
         p_up = get_p(bump_size)
         p_down = get_p(-bump_size)
@@ -106,14 +102,14 @@ class MonteCarloEngine(Engine):
             current_val = getattr(new_model, attribute)
             setattr(new_model, attribute, current_val + param_adj)
 
-            bumped_paths = new_model.generate_paths(self.iterations, self.timestep, instrument.T, dw=dw)
+            bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw)
             if instrument.european:
                 return np.exp(-new_model.r * instrument.T) * instrument.payoff(bumped_paths)
             else:
-                return self.get_ls_american_values(instrument, new_model, bumped_paths)
+                return self.get_ls_american_values(instrument=instrument, model=new_model, paths=bumped_paths)
 
         p_0 = np.exp(-model.r * instrument.T) * instrument.payoff(paths) if instrument.european \
-            else self.get_ls_american_values(instrument, model, paths)
+            else self.get_ls_american_values(instrument=instrument, model=model, paths=paths)
         p_up = get_p(bump_size)
         p_down = get_p(-bump_size)
 
@@ -121,66 +117,58 @@ class MonteCarloEngine(Engine):
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
     def calculate_delta(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING DELTA... ") if self.quiet is False else None
-        return self._generic_first_order_greek(instrument, model, "x0", bump_size, dw, paths)
+        return self._generic_first_order_greek(instrument=instrument, model=model, attribute="x0", bump_size=bump_size, dw=dw, paths=paths)
 
     def calculate_vega(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING VEGA... ") if self.quiet is False else None
-        return self._generic_first_order_greek(instrument, model, "vol", bump_size, dw, paths)
+        return self._generic_first_order_greek(instrument=instrument, model=model, attribute="vol", bump_size=bump_size, dw=dw, paths=paths)
 
     def calculate_rho(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING RHO... ") if self.quiet is False else None
-        return self._generic_first_order_greek(instrument, model, "r", bump_size, dw, paths)
+        return self._generic_first_order_greek(instrument=instrument, model=model, attribute="r", bump_size=bump_size, dw=dw, paths=paths)
 
     def calculate_theta(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING THETA... ") if self.quiet is False else None
         timestep = bump_size if bump_size is not None else self.timestep
         if abs(timestep - self.timestep) > 1e-10:
-            print("BUMP-SIZE DIFFERENT TO TIMESTEP => GENERATING NEW  WIENER INCREMENTS FOR THETA...") if self.quiet is False else None
-            dw = generate_wiener_increments(self.iterations, timestep, instrument.T, correlation=getattr(model, 'correlation', None), antithetic_variates=self.antithetic_variates)
-            paths = model.generate_paths(self.iterations, timestep, instrument.T, dw=dw)
+            dw = generate_wiener_increments(n=self.iterations, dt=timestep, expiry=instrument.T, correlation=getattr(model, 'correlation', None), antithetic_variates=self.antithetic_variates)
+            paths = model.generate_paths(iterations=self.iterations, timestep=timestep, expiry=instrument.T, dw=dw)
         else:
-            dw, paths = self._ensure_paths(instrument, model, dw=dw, paths=paths)
+            dw, paths = self._ensure_paths(instrument=instrument, model=model, dw=dw, paths=paths)
 
         new_instrument = copy.deepcopy(instrument)
         new_instrument.T += -timestep
         new_model = copy.deepcopy(model)
-        bumped_paths = new_model.generate_paths(self.iterations, timestep, new_instrument.T, dw=dw[..., :-1])
+        bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=timestep, expiry=new_instrument.T, dw=dw[..., :-1])
 
         if instrument.european:
             p0 = np.exp(-model.r * instrument.T) * instrument.payoff(paths)
             p1 = new_instrument.payoff(np.array([[model.s0]] * self.iterations)) if bumped_paths.shape[-1] == 0 \
                 else np.exp(-model.r * new_instrument.T) * new_instrument.payoff(bumped_paths)
         else:
-            p0 =  self.get_ls_american_values(instrument, model, paths)
-            p1 = self.get_ls_american_values(new_instrument, new_model, bumped_paths)
+            p0 =  self.get_ls_american_values(instrument=instrument, model=model, paths=paths)
+            p1 = self.get_ls_american_values(instrument=new_instrument, model=new_model, paths=bumped_paths)
 
         samples = (p1 - p0) / timestep
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(samples.shape[0])}
 
     def calculate_gamma(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING GAMMA... ") if self.quiet is False else None
-        return self._generic_second_order_greek(instrument, model, "x0", bump_size, dw=dw, paths=paths)
+        return self._generic_second_order_greek(instrument=instrument, model=model, attribute="x0", bump_size=bump_size, dw=dw, paths=paths)
 
     def calculate_volga(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING VOLGA... ") if self.quiet is False else None
-        return self._generic_second_order_greek(instrument, model, "vol", bump_size, dw=dw, paths=paths)
+        return self._generic_second_order_greek(instrument=instrument, model=model, attribute="vol", bump_size=bump_size, dw=dw, paths=paths)
 
     def calculate_vanna(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
-        print("CALCULATING VANNA... ") if self.quiet is False else None
         assert len(bump_size) == 2
-        dw, _ = self._ensure_paths(instrument, model, dw=dw, paths=paths)
+        dw, _ = self._ensure_paths(instrument=instrument, model=model, dw=dw, paths=paths)
 
         def get_bumped_p(x0_adj, vol_adj):
             new_model = copy.deepcopy(model)
             new_model.x0 += x0_adj
             new_model.vol += vol_adj
 
-            bumped_paths = new_model.generate_paths(self.iterations, self.timestep, instrument.T, dw=dw)
+            bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw)
             if instrument.european:
                 return np.exp(-new_model.r * instrument.T) * instrument.payoff(bumped_paths)
             else:
-                return self.get_ls_american_values(instrument, new_model, bumped_paths)
+                return self.get_ls_american_values(instrument=instrument, model=new_model, paths=bumped_paths)
 
         p_uu = get_bumped_p(bump_size[0], bump_size[1])
         p_ud = get_bumped_p(bump_size[0], -bump_size[1])
@@ -196,11 +184,9 @@ class MonteCarloEngine(Engine):
         Returns: (dw, paths)
         """
         if dw is None:
-            print("GENERATING NEW WIENER PROCESS\n")
-            dw = generate_wiener_increments(self.iterations, self.timestep, instrument.T, correlation=model.correlation, antithetic_variates=self.antithetic_variates)
+            dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, correlation=model.correlation, antithetic_variates=self.antithetic_variates)
 
         if paths is None:
-            print("GENERATING NEW WIENER PROCESS\n")
-            paths = model.generate_paths(self.iterations, self.timestep, instrument.T, dw=dw)
+            paths = model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw)
 
         return dw, paths

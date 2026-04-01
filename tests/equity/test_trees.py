@@ -24,7 +24,7 @@ cases = [
 def test_european_binomial_converges_to_bs(bs_analytical_engine, spot, is_call, timestep, tol):
     model = BSM(x0=spot, r=0.01, q=0.01, vol=0.2)
     european_option = Vanilla(strike=10, expiry=1, european=True, call=is_call)
-    tree_engine = BinomialTree(timestep=timestep, quiet=True)
+    tree_engine = BinomialTree(timestep=timestep)
 
     tree_price = tree_engine.get_price(european_option, model)["value"]
     true_price = bs_analytical_engine.get_price(european_option, model)["value"]
@@ -41,7 +41,7 @@ def test_american_at_least_european(spot, is_call, timestep):
     model = BSM(x0=spot, r=0.01, q=0.01, vol=0.2)
     european_option = Vanilla(strike=10, expiry=1, european=True, call=is_call)
     american_option = Vanilla(strike=10, expiry=1, european=False, call=is_call)
-    tree_engine = BinomialTree(timestep=timestep, quiet=True)
+    tree_engine = BinomialTree(timestep=timestep)
 
     european_price = tree_engine.get_price(european_option, model)["value"]
     american_price = tree_engine.get_price(american_option, model)["value"]
@@ -57,7 +57,7 @@ def test_american_at_least_european(spot, is_call, timestep):
 def test_option_respects_intrinsic_lower_bound(spot, is_call, timestep):
     model = BSM(x0=spot, r=0.01, q=0.01, vol=0.2)
     american_option = Vanilla(strike=10, expiry=1, european=False, call=is_call)
-    tree_engine = BinomialTree(timestep=timestep, quiet=True)
+    tree_engine = BinomialTree(timestep=timestep)
     val = tree_engine.get_price(american_option, model)["value"]
     intrinsic = np.maximum(spot - american_option.K, 0) if is_call else np.maximum(american_option.K - spot, 0)
 

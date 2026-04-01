@@ -8,10 +8,9 @@ class Asian(EquityOption):
         super().__init__(strike, expiry, call)
         self.arithmetic_mean = arithmetic_mean
         self.fixed_strike = fixed_strike
-
         self.raiseStrikeError()
 
-    def payoff(self, price_path: Union[float, np.ndarray]):
+    def payoff(self, price_path:Union[float, np.ndarray]):
         if np.any(price_path < 0):
             raise ValueError("Price path must be non-negative")
         if self.arithmetic_mean:
@@ -29,7 +28,7 @@ class Asian(EquityOption):
 
 
 class Lookback(EquityOption):
-    def __init__(self, strike, expiry, call, fixed_strike:bool==True, **kwargs):
+    def __init__(self, strike, expiry, call, fixed_strike:bool=True, **kwargs):
         super().__init__(strike, expiry, call)
         self.fixed_strike = fixed_strike
         if self.fixed_strike:
@@ -38,7 +37,7 @@ class Lookback(EquityOption):
     def payoff(self, price_path: Union[float, np.ndarray]):
         self.raisePriceError(price_path)
         if self.call:
-            extreme = np.max(price_path, axis=np.ndim(price_path)-1) if self.european \
+            extreme = np.max(price_path, axis=np.ndim(price_path) - 1) if self.european \
                 else np.maximum.accumulate(price_path, axis=1)
         else:
             extreme = np.min(price_path, axis=np.ndim(price_path) - 1) if self.european \
@@ -59,7 +58,7 @@ class Digital(EquityOption):
         if self.cash_payoff < 0:
             raise ValueError("Cash payoff must be non-negative")
 
-    def payoff(self, price_path: Union[float, np.ndarray]):
+    def payoff(self, price_path:Union[float, np.ndarray]):
         self.raisePriceError(price_path)
         spot_to_use = self.get_payoff_spot(price_path)
         return self.cash_payoff * (spot_to_use - self.K > 0) if self.call \
@@ -77,7 +76,7 @@ class Barrier(EquityOption):
 
     def _get_barrier_flag(self, price_path:Union[float, np.ndarray]):
         if self.european:
-            extreme = np.max(price_path, axis=np.ndim(price_path)-1) if self.up \
+            extreme = np.max(price_path, axis=np.ndim(price_path) - 1) if self.up \
                 else np.min(price_path, axis=np.ndim(price_path) - 1)
         else:
             extreme = np.maximum.accumulate(price_path, axis=1) if self.up \

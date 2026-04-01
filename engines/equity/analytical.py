@@ -8,9 +8,7 @@ from typing import Union
 
 class BSMAnalyticalEngine(Engine):
     def get_price(self, instrument:EquityOption, model:Model):
-
-        print("*** BSM ANALYTICAL MODEL ***\nCALCULATING PRICE...\n") if self.quiet is False else None
-        d1, d2 = self._calculate_d1_d2(instrument, model)
+        d1, d2 = self._calculate_d1_d2(instrument=instrument, model=model)
 
         if instrument.call:
             return {"value": (np.exp(-model.q * instrument.T) * model.x0 * norm.cdf(d1)
@@ -19,8 +17,7 @@ class BSMAnalyticalEngine(Engine):
                 - np.exp(-model.q * instrument.T) * model.x0 * norm.cdf(-d1))}
 
     def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
-        print("*** BSM ANALYTICAL MODEL ***\nCALCULATING GREEKS...\n") if self.quiet is False else None
-        d1, d2 = self._calculate_d1_d2(instrument, model)
+        d1, d2 = self._calculate_d1_d2(instrument=instrument, model=model)
         greeks = {}
 
         if isinstance(greek_type, str):
@@ -29,7 +26,7 @@ class BSMAnalyticalEngine(Engine):
         for i in range(len(greek_type)):
             func_name = f"calculate_{greek_type[i]}"
             func = getattr(self, func_name)
-            greeks[greek_type[i]] = func(np.array([d1, d2]), instrument, model)
+            greeks[greek_type[i]] = func(d=np.array([d1, d2]), instrument=instrument, model=model)
 
         return greeks
 
@@ -79,8 +76,7 @@ class BSMAnalyticalEngine(Engine):
         return -np.exp(-model.q * instrument.T) * norm.pdf(d[0]) * d[1] * (1 / model.vol)
 
 class HestonAnalyticalEngine(Engine):
-    def __init__(self, quiet):
-        super().__init__(quiet)
+    def __init__(self):
         self.b = None
         self.u = None
         self.char_func1 = None
@@ -92,43 +88,41 @@ class HestonAnalyticalEngine(Engine):
     def setup_heston_params(self, instrument:EquityOption, model:Model):
         self.b = [model.reversion_speed - model.correlation * model.sigma, model.reversion_speed]
         self.u = [0.5, -0.5]
-        self.char_func1 = lambda phi: (self.psi(phi, t=instrument.T, r=model.r, q=model.q,
-                                                ro=model.correlation,
+        self.char_func1 = lambda phi: (self.psi(phi=phi, t=instrument.T, r=model.r, q=model.q,
+                                                rho=model.correlation,
                                                 a=(model.mean_vol ** 2) * model.reversion_speed,
                                                 sigma=model.sigma, b=self.b[0], u=self.u[0],
                                                 x0=np.log(model.x0), v0=model.vol ** 2))
-        self.char_func2 = lambda phi: (self.psi(phi, t=instrument.T, r=model.r, q=model.q,
-                                                ro=model.correlation,
+        self.char_func2 = lambda phi: (self.psi(phi=phi, t=instrument.T, r=model.r, q=model.q,
+                                                rho=model.correlation,
                                                 a=(model.mean_vol ** 2) * model.reversion_speed,
                                                 sigma=model.sigma, b=self.b[1], u=self.u[1],
                                                 x0=np.log(model.x0), v0=model.vol ** 2))
 
         self.phi_bounds = [1e-8, 750]
 
-        self.p1 = self.get_big_p(self.char_func1, instrument.K, self.phi_bounds)
-        self.p2 = self.get_big_p(self.char_func2, instrument.K, self.phi_bounds)
+        self.p1 = self.get_big_p(char_func=self.char_func1, k=instrument.K, phi_bounds=self.phi_bounds)
+        self.p2 = self.get_big_p(char_func=self.char_func2, k=instrument.K, phi_bounds=self.phi_bounds)
 
     def get_price(self, instrument:EquityOption, model:Model):
-        print(f"*** HESTON ANALYTICAL MODEL ***\nCALCULATING PRICE...\n") if self.quiet is False else None
         # just ise BSM if sigma = 0
         if model.sigma < 1e-8:
-            bsm_engine, bsm_model = self.retrieve_bsm_engine_from_heston(instrument, model)
-            return bsm_engine.get_price(instrument, bsm_model)
+            bsm_engine, bsm_model = self.retrieve_bsm_engine_from_heston(instrument=instrument, model=model)
+            return bsm_engine.get_price(instrument=instrument, model=bsm_model)
 
-        self.setup_heston_params(instrument, model)
+        self.setup_heston_params(instrument=instrument, model=model)
         p_call = model.x0 * np.exp(-model.q * instrument.T) * self.p1 - instrument.K * np.exp(-model.r * instrument.T) * self.p2
 
         return {"value": p_call} if instrument.call \
             else {"value": p_call - model.x0 * np.exp(-model.q * instrument.T) + instrument.K * np.exp(-model.r * instrument.T)}
 
     def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
-        print("*** HESTON ANALYTICAL MODEL ***\nCALCULATING GREEKS...\n") if self.quiet is False else None
         # just ise BSM if sigma = 0
         if model.sigma < 1e-8:
-            bsm_engine, bsm_model = self.retrieve_bsm_engine_from_heston(instrument, model)
-            return bsm_engine.get_greeks(instrument, bsm_model, greek_type=greek_type)
+            bsm_engine, bsm_model = self.retrieve_bsm_engine_from_heston(instrument=instrument, model=model)
+            return bsm_engine.get_greeks(instrument=instrument, model=bsm_model, greek_type=greek_type)
 
-        self.setup_heston_params(instrument, model)
+        self.setup_heston_params(instrument=instrument, model=model)
         greeks = {}
 
         if isinstance(greek_type, str):
@@ -137,7 +131,7 @@ class HestonAnalyticalEngine(Engine):
         for i in range(len(greek_type)):
             func_name = f"calculate_{greek_type[i]}"
             func = getattr(self, func_name)
-            greeks[greek_type[i]] = func(instrument, model)
+            greeks[greek_type[i]] = func(instrument=instrument, model=model)
 
         return greeks
 
@@ -146,8 +140,8 @@ class HestonAnalyticalEngine(Engine):
                 else np.exp(-model.q * instrument.T) * (self.p1 - 1))
 
     def calculate_vega(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[0], self.u[0])
-        _d2 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[1], self.u[1])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
+        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[1], u=self.u[1])
 
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (phi * 1j) * (
                                     model.x0 * np.exp(-model.q * instrument.T) * self.char_func1(phi) * _d1(phi)
@@ -166,10 +160,10 @@ class HestonAnalyticalEngine(Engine):
         term1 = (model.q * model.x0 * np.exp(-model.q * instrument.T) * self.p1
                 - model.r * instrument.K * np.exp(-model.r * instrument.T) * self.p2)
 
-        _d1 = lambda phi: self.d(phi, model.correlation, self.b[0], self.u[0], model.sigma)
-        _g1 = lambda phi: self.g(phi, model.correlation, self.b[0], self.u[0], model.sigma)
-        _d2 = lambda phi: self.d(phi, model.correlation, self.b[1], self.u[1], model.sigma)
-        _g2 = lambda phi: self.g(phi, model.correlation, self.b[1], self.u[1], model.sigma)
+        _d1 = lambda phi: self.d(phi=phi, rho=model.correlation, b=self.b[0], u=self.u[0], sigma=model.sigma)
+        _g1 = lambda phi: self.g(phi=phi, rho=model.correlation, b=self.b[0], u=self.u[0], sigma=model.sigma)
+        _d2 = lambda phi: self.d(phi=phi, rho=model.correlation, b=self.b[1], u=self.u[1], sigma=model.sigma)
+        _g2 = lambda phi: self.g(phi=phi, rho=model.correlation, b=self.b[1], u=self.u[1], sigma=model.sigma)
 
         _dC1 = lambda phi: (1j * (model.r - model.q) * phi
                             + (model.mean_vol**2 * model.reversion_speed / model.sigma**2)
@@ -216,8 +210,8 @@ class HestonAnalyticalEngine(Engine):
         return scale * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
 
     def calculate_volga(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[0], self.u[0])
-        _d2 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[1], self.u[1])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
+        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[1], u=self.u[1])
 
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (phi * 1j) * (
                                  model.x0 * np.exp(-model.q * instrument.T) * self.char_func1(phi) * (_d1(phi) + 2 * (model.vol *  _d1(phi)) ** 2)
@@ -228,7 +222,7 @@ class HestonAnalyticalEngine(Engine):
 
 
     def calculate_vanna(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi, instrument.T, model.correlation, model.sigma, self.b[0], self.u[0])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (1j * phi) * self.char_func1(phi) * _d1(phi)).real
         term = np.exp(-model.q * instrument.T) * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
         return (2 * model.vol / np.pi) * term
@@ -238,35 +232,35 @@ class HestonAnalyticalEngine(Engine):
         func_to_pass = lambda phi: (np.exp(-phi * np.log(k) * 1j) * char_func(phi) / (1j * phi)).real
         return 0.5 + quad(func_to_pass, phi_bounds[0], phi_bounds[1])[0] / np.pi
 
-    def psi(self, phi, t:float, r:float, q:float, ro:float, a:float, sigma:float, b:float, u:float, x0:float, v0:float):
-        return np.exp(self.C(phi, t, r, q, ro, a, sigma, b, u) + v0 * self.D(phi, t, ro, sigma, b, u) + 1j * x0 * phi)
+    def psi(self, phi, t:float, r:float, q:float, rho:float, a:float, sigma:float, b:float, u:float, x0:float, v0:float):
+        return np.exp(self.C(phi=phi, t=t, r=r, q=q, rho=rho, a=a, sigma=sigma, b=b, u=u) + v0 * self.D(phi=phi, t=t, rho=rho, sigma=sigma, b=b, u=u) + 1j * x0 * phi)
 
-    def D(self, phi, t:float, ro:float, sigma:float, b:float, u:float):
-        _d = self.d(phi, ro, b, u, sigma)
-        _g = self.g(phi, ro, b, u, sigma)
+    def D(self, phi, t:float, rho:float, sigma:float, b:float, u:float):
+        _d = self.d(phi=phi, rho=rho, b=b, u=u, sigma=sigma)
+        _g = self.g(phi=phi, rho=rho, b=b, u=u, sigma=sigma)
 
-        return ((b - ro * sigma * 1j * phi + _d) / (sigma ** 2)) * (
+        return ((b - rho * sigma * 1j * phi + _d) / (sigma ** 2)) * (
                 (1 - np.exp(_d * t)) / (1 - _g * np.exp(_d * t))
                 )
 
-    def C(self, phi, t:float, r:float, q:float, ro:float, a:float, sigma:float, b:float, u:float):
-        _d = self.d(phi, ro, b, u, sigma)
-        _g = self.g(phi, ro, b, u, sigma)
+    def C(self, phi, t:float, r:float, q:float, rho:float, a:float, sigma:float, b:float, u:float):
+        _d = self.d(phi=phi, rho=rho, b=b, u=u, sigma=sigma)
+        _g = self.g(phi=phi, rho=rho, b=b, u=u, sigma=sigma)
 
         return (1j * (r - q) * phi * t
                 + (a / sigma ** 2) * (
-                        (b - ro * sigma * 1j * phi + _d) * t
+                        (b - rho * sigma * 1j * phi + _d) * t
                         - 2 * np.log((1 - _g * np.exp(_d * t)) / (1 - _g))
                         )
                 )
 
-    def g(self, phi, ro:float, b:float, u:float, sigma:float):
-        _d = self.d(phi, ro, b, u, sigma)
-        return (b - 1j * ro * sigma * phi + _d) / (b - 1j * ro * sigma * phi - _d)
+    def g(self, phi, rho:float, b:float, u:float, sigma:float):
+        _d = self.d(phi=phi, rho=rho, b=b, u=u, sigma=sigma)
+        return (b - 1j * rho * sigma * phi + _d) / (b - 1j * rho * sigma * phi - _d)
 
     @staticmethod
-    def d(phi, ro:float, b:float, u:float, sigma:float):
-        z = (1j * ro * sigma * phi - b) ** 2 - sigma ** 2 * (2j * u * phi - phi ** 2)
+    def d(phi, rho:float, b:float, u:float, sigma:float):
+        z = (1j * rho * sigma * phi - b) ** 2 - sigma ** 2 * (2j * u * phi - phi ** 2)
         return -np.sqrt(z)
 
     def retrieve_bsm_engine_from_heston(self, instrument:EquityOption, model:Model):

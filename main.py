@@ -2,7 +2,9 @@ from instruments import *
 from models import *
 from engines import *
 from parameters import *
-from utils.math_utils import *
+from numerical_schemes import *
+from term_structure import *
+from utils import *
 
 # setup models
 derivative = Vanilla(**params_derivative)
@@ -10,8 +12,8 @@ bsm_model = BSM(**params_bsm)
 heston_model = Heston(**params_heston)
 
 # setup pricing engines
-bsm_engine = BSMAnalyticalEngine(quiet=True)
-heston_engine = HestonAnalyticalEngine(quiet=True)
+bsm_engine = BSMAnalyticalEngine()
+heston_engine = HestonAnalyticalEngine()
 tree_engine = BinomialTree(**params_tree)
 mc_engine = MonteCarloEngine(**params_MC)
 

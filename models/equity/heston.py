@@ -19,17 +19,17 @@ class Heston(Model):
     def generate_paths(self, iterations:int, timestep:float, expiry:float, dw:np.ndarray=None, antithetic_variates:bool=False):
         if dw is None:
             dw = np.zeros((2, iterations, int(round(expiry / timestep))))
-            dw_array = generate_wiener_increments(iterations, timestep, expiry, correlation=self.correlation, antithetic_variates=antithetic_variates)
+            dw_array = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, correlation=self.correlation, antithetic_variates=antithetic_variates)
             dw[0], dw[1] = dw_array[0], dw_array[1]
 
         if self.sigma > 0:
-            var_model = CIR(self.vol**2, mean=self.mean_vol**2, reversion_speed=self.reversion_speed, sigma=self.sigma)
-            var_paths = var_model.generate_paths(iterations, timestep, expiry, dw=dw[1], scheme=self.var_scheme)
+            var_model = CIR(x0=self.vol**2, mean=self.mean_vol**2, reversion_speed=self.reversion_speed, sigma=self.sigma)
+            var_paths = var_model.generate_paths(iterations=iterations, timestep=timestep, expiry=expiry, dw=dw[1], antithetic_variates=antithetic_variates, scheme=self.var_scheme)
         else:
             var_paths = self.vol ** 2
-        price_scheme = create_scheme(self.price_scheme, self.x0, mu=self.r - self.q, sigma=np.sqrt(var_paths), f_drift=standard_drift_vol, f_vol=heston_vol)
+        price_scheme = create_scheme(scheme_name=self.price_scheme, x0=self.x0, mu=self.r - self.q, sigma=np.sqrt(var_paths), f_drift=standard_drift_vol, f_vol=heston_vol)
 
-        return price_scheme.get_paths(timestep, dw[0])
+        return price_scheme.get_paths(dt=timestep, dw=dw[0])
 
 
 

@@ -8,17 +8,16 @@ class BSM(Model):
         self.vol = vol
         self.q = q
 
-
     def generate_paths(self, iterations:int, timestep:float, expiry:float, dw:np.ndarray=None, antithetic_variates:bool=False):
         t = np.linspace(0, expiry, int(round(expiry / timestep)) + 1)
         if dw is None:
-            dw = generate_wiener_increments(iterations, timestep, expiry, antithetic_variates=antithetic_variates)
+            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, antithetic_variates=antithetic_variates)
         w = np.zeros((dw.shape[0], dw.shape[1] + 1))
         w[:, 1:] = np.cumsum(dw, axis=1)
 
         return self.x0 * np.exp((self.r - self.q - (self.vol ** 2) / 2) * np.tile(t, (iterations, 1)) + self.vol * w)
 
-    def get_tree_factors(self, timestep: float):
+    def get_tree_factors(self, timestep:float):
         return np.exp(self.vol * np.sqrt(timestep)), np.exp(-self.vol * np.sqrt(timestep))
 
 

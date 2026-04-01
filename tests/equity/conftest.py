@@ -35,13 +35,13 @@ def std_bs_model():
 
 @pytest.fixture
 def bs_analytical_engine():
-    return BSMAnalyticalEngine(quiet=True)
+    return BSMAnalyticalEngine()
 
 @pytest.fixture
 def heston_analytical_engine():
-    return HestonAnalyticalEngine(quiet=True)
+    return HestonAnalyticalEngine()
 
 @pytest.fixture
 def binomial_tree():
-    BinomialTree(timestep=1/252, quiet=True)
+    BinomialTree(timestep=1/252)
 
