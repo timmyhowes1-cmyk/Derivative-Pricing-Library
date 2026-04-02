@@ -1,3 +1,3 @@
-from instruments.equity.base import *
-from instruments.equity.equity_exotic import *
-from instruments.equity.equity_vanilla import *
+from .base import *
+from .equity_exotic import *
+from .equity_vanilla import *

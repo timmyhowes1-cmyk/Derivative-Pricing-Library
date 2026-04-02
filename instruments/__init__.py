@@ -1,2 +1,2 @@
-from instruments.equity import *
-from instruments.rates import *
+from .equity import *
+from .rates import *

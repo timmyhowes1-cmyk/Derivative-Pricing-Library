@@ -1,7 +1,7 @@
 from models.equity.base import Model
-from models.equity.cir import *
+from models.equity.cir import CIR
 from numerical_schemes import *
-from utils.math_utils import *
+from utils.math_utils import generate_wiener_increments
 
 class Heston(Model):
     def __init__(self, x0, r:float=0.01, vol:float=0.1, q:float=0, mean_vol:float=0.1, reversion_speed:float=2.0, sigma:float=0.1, correlation:float=0.5, price_scheme:str="Euler", var_scheme:str="ModifiedMilsteinCIR", **kwargs):
@@ -27,7 +27,7 @@ class Heston(Model):
             var_paths = var_model.generate_paths(iterations=iterations, timestep=timestep, expiry=expiry, dw=dw[1], antithetic_variates=antithetic_variates, scheme=self.var_scheme)
         else:
             var_paths = self.vol ** 2
-        price_scheme = create_scheme(scheme_name=self.price_scheme, x0=self.x0, mu=self.r - self.q, sigma=np.sqrt(var_paths), f_drift=standard_drift_vol, f_vol=heston_vol)
+        price_scheme = retrieve_scheme(scheme_name=self.price_scheme, x0=self.x0, mu=self.r - self.q, sigma=np.sqrt(var_paths), f_drift=standard_drift_vol, f_vol=heston_vol)
 
         return price_scheme.get_paths(dt=timestep, dw=dw[0])
 

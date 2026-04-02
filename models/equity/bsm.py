@@ -1,5 +1,6 @@
 from models.equity.base import Model
-from utils.math_utils import *
+import numpy as np
+from utils.math_utils import generate_wiener_increments
 
 class BSM(Model):
     def __init__(self, x0, r:float=0.01, vol:float=0.1, q:float=0):

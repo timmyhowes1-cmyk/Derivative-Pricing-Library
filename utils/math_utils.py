@@ -4,20 +4,6 @@ def expanding_mean_axis1(x, arithmetic_mean=True):
     n = np.arange(1, x.shape[1] + 1)
     return np.cumsum(x, axis=1) / n if arithmetic_mean else np.exp(np.cumsum(np.log(x), axis=1) / n)
 
-def simpsons_rule(f, a, b, n=5000):
-    if n % 2 != 0:
-        raise ValueError("Number of intervals 'n' must be even.")
-
-    h = (b - a) / n
-    x = np.linspace(a, b, n + 1)
-    y = f(x)
-
-    integral = y[0] + y[-1]
-    integral += 4 * np.sum(y[1:-1:2])
-    integral += 2 * np.sum(y[2:-1:2])
-
-    return (h / 3) * integral
-
 def fit_continuation_lstsq(x, y, deg=2, ridge=0):
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
@@ -78,6 +64,7 @@ def format_for_scheme(param, shape):
     if isinstance(param, float) or isinstance(param, int):
         return param * np.ones(shape=shape)
     return param
+
 
 
 

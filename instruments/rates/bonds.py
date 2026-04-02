@@ -23,7 +23,7 @@ class FixedRateBond(Bond):
         self.coupon_rate = coupon_rate
         self.date_convention = date_convention
 
-class FloatingRateBond(Bond):
+class PlainFRN(Bond):
     def __init__(self, notional, schedule:Schedule, index:InterestRateIndex, spread:float=0.0):
         coupons = make_floating_leg(schedule=schedule, notional=notional, index=index, spread=spread)
         coupons.cashflows.append(Redemption(payment_date=schedule.dates[-1], notional=notional))

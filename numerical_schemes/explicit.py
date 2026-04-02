@@ -1,4 +1,4 @@
-from numerical_schemes.base import *
+from .base import NumericalScheme, standard_drift_vol, itself
 from utils.math_utils import format_for_scheme
 import numpy as np
 

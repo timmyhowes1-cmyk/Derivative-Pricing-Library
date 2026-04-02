@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.integrate import quad
-from engines.equity.base import Engine
-from scipy.stats import norm
-from models.equity import *
-from instruments.equity import EquityOption
 from typing import Union
+from scipy.stats import norm
+from engines.equity.base import Engine
+from instruments.equity import EquityOption
+from models.equity import Model
 
 class BSMAnalyticalEngine(Engine):
     def get_price(self, instrument:EquityOption, model:Model):

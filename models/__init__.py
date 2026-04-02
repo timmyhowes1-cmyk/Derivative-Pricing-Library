@@ -1,1 +1,1 @@
-from models.equity import *
+from .equity import *

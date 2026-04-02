@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from numerical_schemes import NumericalScheme
 
 class Model(ABC):
     def __init__(self, x0:float, **kwargs):
