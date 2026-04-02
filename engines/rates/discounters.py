@@ -37,6 +37,19 @@ class SwapDiscountingEngine(DiscountingEngine):
         value = swap.fixed_leg_sign() * fixed_npv + swap.floating_leg_sign() * floating_npv
         return {"value": value}
 
+    def get_pv01(self, swap:InterestRateSwap):
+        curve_down = self.parallel_shift(-bump)
+        curve_up = self.parallel_shift(bump)
+
+        engine_down = SwapDiscountingEngine(curve_down)
+        engine_up = SwapDiscountingEngine(curve_up)
+
+        pv_down = engine_down.get_price(swap)["value"]
+        pv_up = engine_up.get_price(swap)["value"]
+
+        return {"PV01": (pv_down - pv_up) / 2}
+
+
 def calculate_leg_npv(leg:Leg, curve:YieldCurve):
     total = 0
     for cf in leg.cashflows:
