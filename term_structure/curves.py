@@ -66,7 +66,7 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
         self.times = times
         self.discount_factors = discount_factors
 
-    def discount(self, t:float) -> float:
+    def get_discount_factor(self, t:float) -> float:
         if t <= self.times[0]:
             return self.discount_factors[0]
         if t >= self.times[-1]:

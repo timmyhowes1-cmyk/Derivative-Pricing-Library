@@ -25,7 +25,6 @@ class Schedule():
     def periods(self):
         return list(zip(self.dates[:-1], self.dates[1:]))
 
-
 def add_months(date:dt.date, months:int):
     new_month = date.month + months
     new_year = date.year + (new_month - 1) // 12

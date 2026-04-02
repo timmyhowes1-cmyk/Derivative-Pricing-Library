@@ -18,10 +18,22 @@ class InterestRateSwap():
     def floating_leg_sign(self):
         return 1 if self.pay_fixed else -1
 
-
 def make_vanilla_swap(notional:float, fixed_schedule:Schedule, floating_schedule:Schedule, fixed_rate:float, floating_index:InterestRateIndex,
                       fixed_date_convention:DateConvention, spread:float=0.0, pay_fixed:bool=True):
-    fixed_leg = make_fixed_leg(schedule=fixed_schedule, notional=notional, rate=fixed_rate, date_conventionfixed_date_convention)
+    fixed_leg = make_fixed_leg(schedule=fixed_schedule, notional=notional, rate=fixed_rate, date_convention=fixed_date_convention)
     floating_leg = make_floating_leg(schedule=floating_schedule, notional=notional, index=floating_index, spread=spread)
 
     return InterestRateSwap(fixed_leg=fixed_leg, floating_leg=floating_leg, pay_fixed=pay_fixed)
+
+def par_swap_rate(schedule:Schedule, curve:YieldCurve):
+    maturity = schedule.end_date
+    t_end = curve.get_time_from_reference(maturity)
+    numerator = 1 - curve.get_discount_factor(t_end)
+
+    denominator = 0
+    for accrual_start_date, accrual_end_date in schedule.periods():
+        t_accrual = curve.date_convention.get_year_fraction(accrual_start_date, accrual_end_date)
+        t_end = curve.get_time_from_reference(accrual_end_date)
+        denominator += t_accrual * curve.get_discount_factor(t_end)
+
+    return numerator / denominator
