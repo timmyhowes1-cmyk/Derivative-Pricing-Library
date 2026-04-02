@@ -20,3 +20,9 @@ def create_scheme(scheme_name, *args, **kwargs):
 
     # 4. Fallback if not found
     raise ValueError(f"Scheme '{scheme_name}' not found. Options are: {[c.__name__ for c in subclasses]}")
+
+def itself(c, x, t):
+    return c
+
+def standard_drift_vol(c, x, t):
+    return c * x

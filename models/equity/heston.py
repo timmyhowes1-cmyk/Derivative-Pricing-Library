@@ -1,5 +1,5 @@
 from models.equity.base import Model
-from models.equity.cir import CIR
+from models.equity.cir import *
 from numerical_schemes import *
 from utils.math_utils import *
 
@@ -31,5 +31,5 @@ class Heston(Model):
 
         return price_scheme.get_paths(dt=timestep, dw=dw[0])
 
-
-
+def heston_vol(sigma, x, t):
+    return np.sqrt(sigma) * x

@@ -67,31 +67,12 @@ def generate_wiener_increments(n, dt, expiry, correlation=None, antithetic_varia
         return np.array([dw, dw2])
     return dw
 
-
 def get_antithetic_stdnormal(shape):
     split = int(shape[0] // 2)
     shocks = generate_standard_normal((split, shape[1]))
     shocks = np.concatenate([shocks, -shocks], axis=0)
     return shocks if shape[0] % 2 == 0 \
         else np.concatenate([shocks, generate_standard_normal((1, shape[1]))], axis=0)
-
-def itself(c, x, t):
-    return c
-
-def standard_drift_vol(c, x, t):
-    return c * x
-
-def heston_vol(sigma, x, t):
-    return np.sqrt(sigma) * x
-
-def cir_drift(theta, k, x):
-    return theta * (k - x)
-
-def cir_vol(sigma, x):
-    return sigma * np.sqrt(x)
-
-def cir_vol_derivative(sigma, x):
-    return 0.5 * sigma / np.sqrt(x)
 
 def format_for_scheme(param, shape):
     if isinstance(param, float) or isinstance(param, int):

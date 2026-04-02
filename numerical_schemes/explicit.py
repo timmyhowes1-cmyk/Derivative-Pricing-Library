@@ -1,5 +1,5 @@
-from numerical_schemes.base import NumericalScheme
-from utils.math_utils import format_for_scheme, standard_drift_vol
+from numerical_schemes.base import *
+from utils.math_utils import format_for_scheme
 import numpy as np
 
 class Euler(NumericalScheme):

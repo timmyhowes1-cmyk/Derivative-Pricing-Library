@@ -1,6 +1,5 @@
-import numerical_schemes
-from models.equity.base import Model
 from numerical_schemes import *
+from models.equity.base import Model
 from utils.math_utils import *
 
 class CIR(Model):
@@ -28,4 +27,11 @@ class CIR(Model):
         return scheme_to_use.get_paths(dt=timestep, dw=dw)
 
 
+def cir_drift(theta, k, x):
+    return theta * (k - x)
 
+def cir_vol(sigma, x):
+    return sigma * np.sqrt(x)
+
+def cir_vol_derivative(sigma, x):
+    return 0.5 * sigma / np.sqrt(x)

@@ -18,6 +18,7 @@ class InterestRateSwap():
     def floating_leg_sign(self):
         return 1 if self.pay_fixed else -1
 
+
 def make_vanilla_swap(notional:float, fixed_schedule:Schedule, floating_schedule:Schedule, fixed_rate:float, floating_index:InterestRateIndex,
                       fixed_date_convention:DateConvention, spread:float=0.0, pay_fixed:bool=True):
     fixed_leg = make_fixed_leg(schedule=fixed_schedule, notional=notional, rate=fixed_rate, date_conventionfixed_date_convention)
