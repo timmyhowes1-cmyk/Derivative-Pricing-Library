@@ -85,7 +85,21 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
         w = (t - t1) / (t2 - t1)
         return np.exp(np.log(df1) + w * (np.log(df2) - np.log(df1)))
 
-    def parallel_shift(self, bump):
+    def set_discount_factor(self, t:float, discount_factor:float, tol:float=1e-6):
+        if isinstance(self.times, np.ndarray):
+            idx = np.where(np.abs(self.times - t) < tol)[0]
+            if len(idx) == 0:
+                i = np.argmin(np.abs(self.times - t))
+            else:
+                i = idx[0]
+        else:
+            try:
+                i = self.times.index(t)
+            except ValueError:
+                i = min(range(len(self.times)), key=lambda j: abs(self.times[j] - t))
+        self.discount_factors[i] = discount_factor
+
+    def parallel_shift(self, bump:float=0.0001):
         new_curve = copy.deepcopy(self)
         rates = [new_curve.get_zero_rate(t) + bump for t in new_curve.times]
         new_dfs = []
@@ -98,3 +112,18 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
                 raise ValueError(f"Unknown compounding: {new_curve.compounding}")
         new_curve.discount_factors = np.array(new_dfs)
         return new_curve
+
+    def key_rate_shift(self, date:dt.date, bump:float=0.0001):
+        new_curve = copy.deepcopy(self)
+        t_target = self.get_time_from_reference(date)
+        t_nearby = [t for t in new_curve.times if (abs(t - t_target) < 0.5)]
+        for t in t_nearby:
+            r_new = new_curve.get_zero_rate(t) + bump
+            if self.compounding == "continuous":
+                df = np.exp(-r_new * t)
+            else:
+                df = (1 + r_new) ** -t
+            new_curve.set_discount_factor(t, df)
+
+        return new_curve
+
