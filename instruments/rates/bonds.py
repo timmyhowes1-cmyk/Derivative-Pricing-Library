@@ -13,6 +13,9 @@ class Bond():
     def get_payment_dates(self):
         return cashflows.payment_dates()
 
+    def get_maturity_date(self):
+        return cashflows.payment_dates()[-1]
+
 class FixedRateBond(Bond):
     def __init__(self, notional, schedule:Schedule, coupon_rate:float, date_convention:DateConvention):
         coupons = make_fixed_leg(schedule=schedule, notional=notional, rate=coupon_rate, date_convention=date_convention)

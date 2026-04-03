@@ -2,7 +2,7 @@ import datetime as dt
 import calendar
 
 class Schedule():
-    def __init__(self, start_date:dt.date, end_date:dt.date, months_per_period:int):
+    def __init__(self, start_date:dt.date, end_date:dt.date, months_per_period:int=6):
         self.start_date = start_date
         self.end_date = end_date
         self.months_per_period = months_per_period

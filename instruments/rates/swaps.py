@@ -13,6 +13,9 @@ class InterestRateSwap():
     def get_legs(self):
         return self.fixed_leg, self.floating_leg
 
+    def get_maturity_date(self):
+        return max(self.fixed_leg.payment_dates()[-1], self.floating_leg.payment_dates()[-1])
+
     def fixed_leg_sign(self):
         return -1 if self.pay_fixed else 1
 
