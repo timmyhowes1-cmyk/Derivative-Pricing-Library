@@ -32,7 +32,7 @@ def bootstrap_curve(helpers:list, reference_date:dt.date, date_convention:DateCo
         discount_factors.append(df_new)
 
     return curve_cls(reference_date=reference_date, date_convention=date_convention, times=np.array(times, dtype=float),
-                     discount_factors=np.array(discount_factors, dtype=float))
+                     discount_factors=np.array(discount_factors, dtype=float), compounding=compounding)
 
 
 class DepositHelper(RateHelper):
