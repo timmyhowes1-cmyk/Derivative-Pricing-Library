@@ -6,7 +6,7 @@ from term_structure.cashflows import Leg, Redemption, make_fixed_leg, make_float
 from term_structure.indices import InterestRateIndex
 from term_structure.date_convention import DateConvention
 
-class InterestRateSwap():
+class InterestRateSwap:
     def __init__(self, fixed_leg:Leg, floating_leg:Leg, pay_fixed:bool=True):
         self.fixed_leg = fixed_leg
         self.floating_leg = floating_leg

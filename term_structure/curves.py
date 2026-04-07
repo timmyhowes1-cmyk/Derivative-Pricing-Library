@@ -24,6 +24,8 @@ class YieldCurve(ABC):
             return -np.log(df) / t
         elif self.compounding == "annual":
             return (df ** (-1 / t)) - 1
+        elif self.compounding == "simple":
+            return (1 / df - 1) / t
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
@@ -35,9 +37,11 @@ class YieldCurve(ABC):
         t_diff = t2 - t1
 
         if self.compounding == "continuous":
-            return (np.log(df1) - np.log(df2)) / t_diff
+            return np.log(df1 / df2) / t_diff
         elif self.compounding == "annual":
             return (df1 / df2) ** (1 / t_diff) - 1
+        elif self.compounding == "simple":
+            return (1 - df2 / df1) / t
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
@@ -45,15 +49,17 @@ class YieldCurve(ABC):
         return self.date_convention.get_year_fraction(self.reference_date, date)
 
 class FlatYieldCurve(YieldCurve):
-    def __init__(self, reference_date:dt.date, date_convention:DateConvention, rate:float, compounding:str="continuous"):
+    def __init__(self, reference_date:dt.date, date_convention:DateConvention, flat_rate:float, compounding:str="continuous"):
         super().__init__(reference_date, date_convention, compounding)
-        self.rate = rate
+        self.flat_rate = flat_rate
 
     def get_discount_factor(self, t:float):
         if self.compounding == "continuous":
-            return np.exp(-self.rate * t)
+            return np.exp(-self.flat_rate * t)
         elif self.compounding == "annual":
-            return (1 + self.rate) ** -t
+            return 1 / ((1 + self.flat_rate) ** t)
+        elif self.compounding == "simple":
+            return 1 / (1 + self.flat_rate * t)
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
@@ -107,7 +113,9 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
             if new_curve.compounding == "continuous":
                 new_dfs.append(np.exp(-r * t))
             elif new_curve.compounding == "annual":
-                new_dfs.append((1 + r) ** -t)
+                new_dfs.append(1 / ((1 + r) ** t))
+            elif new_curve.compounding == "simple":
+                new_dfs.append(1 / (1 + r * t))
             else:
                 raise ValueError(f"Unknown compounding: {new_curve.compounding}")
         new_curve.discount_factors = np.array(new_dfs)
@@ -121,9 +129,10 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
             r_new = new_curve.get_zero_rate(t) + bump
             if self.compounding == "continuous":
                 df = np.exp(-r_new * t)
-            else:
-                df = (1 + r_new) ** -t
+            elif self.compounding == "annual":
+                df = 1 / ((1 + r_new) ** t)
+            elif self.compounding == "simple":
+                df = 1 / (1 + r_new * t)
             new_curve.set_discount_factor(t, df)
-
         return new_curve
 
