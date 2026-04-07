@@ -36,13 +36,13 @@ class FloatingRateCoupon(Cashflow):
     def __init__(self, notional:float, accrual_start_date:dt.date, accrual_end_date:dt.date, payment_date:dt.date, index:InterestRateIndex, spread:float=0.0):
         super().__init__(payment_date)
         self.notional = notional
-        self.accrual_start = accrual_start_date
-        self.accrual_end = accrual_end_date
+        self.accrual_start_date = accrual_start_date
+        self.accrual_end_date = accrual_end_date
         self.index = index
         self.spread = spread
 
     def rate(self):
-        fwd = self.index.forward_rate(self.accrual_start_date, self.accrual_end_date)
+        fwd = self.index.get_forward_rate(self.accrual_start_date, self.accrual_end_date)
         return fwd + self.spread
 
     def amount(self):

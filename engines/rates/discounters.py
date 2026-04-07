@@ -54,36 +54,39 @@ class SwapDiscountingEngine(DiscountingEngine):
         super().__init__(curve)
 
     def get_price(self, swap:InterestRateSwap):
+        if isinstance(swap, FRA):
+            return {"value": fra_npv(instrument, self.curve)}
+
         fixed_leg, floating_leg = swap.get_legs()
-        fixed_npv = self.calculate_leg_npv(fixed_leg, self.curve)
-        floating_npv = self.calculate_leg_npv(floating_leg, self.curve)
+        fixed_npv = calculate_leg_npv(fixed_leg, self.curve)
+        floating_npv = calculate_leg_npv(floating_leg, self.curve)
 
         value = swap.fixed_leg_sign() * fixed_npv + swap.floating_leg_sign() * floating_npv
         return {"value": value}
 
     def get_pv01(self, swap:InterestRateSwap):
         bump = 0.0001
-        curve_down = self.parallel_shift(-bump)
-        curve_up = self.parallel_shift(bump)
+        curve_down = self.curve.parallel_shift(-bump)
+        curve_up = self.curve.parallel_shift(bump)
 
         engine_down = SwapDiscountingEngine(curve_down)
         engine_up = SwapDiscountingEngine(curve_up)
 
-        pv_down = engine_down.get_price(swap)["value"]
-        pv_up = engine_up.get_price(swap)["value"]
+        v_down = engine_down.get_price(swap)["value"]
+        v_up = engine_up.get_price(swap)["value"]
 
-        return {"pv01": (pv_down - pv_up) / 2}
+        return {"pv01": (v_down - v_up) / 2}
 
     def get_bucket_pv01(self, swap:InterestRateSwap, date:dt.date):
         bump = 0.0001
-        curve_down = self.key_rate_shift(date, -bump)
-        curve_up = self.key_rate_shift(date, bump)
+        curve_down = self.curve.key_rate_shift(date, -bump)
+        curve_up = self.curve.key_rate_shift(date, bump)
 
         engine_down = SwapDiscountingEngine(curve_down)
         engine_up = SwapDiscountingEngine(curve_up)
 
-        pv_down = engine_down.get_price(swap)["value"]
-        pv_up = engine_up.get_price(swap)["value"]
+        v_down = engine_down.get_price(swap)["value"]
+        v_up = engine_up.get_price(swap)["value"]
         t = np.round(self.curve.get_time_from_reference(date), 2)
         return {f"bucket_pv01_{t}Y": (v_down - v_up) / 2}
 
@@ -94,3 +97,17 @@ def calculate_leg_npv(leg:Leg, curve:YieldCurve):
         df = curve.get_discount_factor(t)  # or discount(t) via time_from_reference
         total += cf.amount() * df
     return total
+
+
+def fra_npv(fra:FRA, curve:YieldCurve):
+    fwd_rate = fra.floating_leg.cashflows[0].rate()
+
+    numerator = fra.floating_leg_sign() * fra.floating_leg.cashflows[0].amount() + fra.fixed_leg_sign() * fra.fixed_leg.cashflows[0].amount()
+    t_accrual = fra.floating_leg.cashflows[0].index.date_convention.get_year_fraction(fra.floating_leg.cashflows[0].accrual_start_date, fra.floating_leg.cashflows[0].accrual_end_date)
+    denominator = 1 + fwd_rate * t_accrual
+    payoff = numerator / denominator
+
+    t_settle = curve.get_time_from_reference(fra.settlement_date)
+    df_settle = curve.get_discount_factor(t_settle)
+
+    return payoff * df_settle
