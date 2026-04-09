@@ -1,14 +1,10 @@
 import copy
 from abc import abstractmethod
-from term_structure.yield_curve import YieldCurve
-from cashflows import Leg
-from engines.rates.base import DiscountingEngine
-from instruments.rates.bonds import Bond
-from instruments.rates.swaps import InterestRateSwap
-
-class DiscountingEngine(Engine):
-    def __init__(self, curve:YieldCurve):
-        self.curve = curve
+import datetime as dt
+from term_structure.curves import YieldCurve
+from term_structure.cashflows import Leg
+from .base import DiscountingEngine
+from instruments.rates import Bond, InterestRateSwap, InterestRateFutures, FRA
 
 class BondDiscountingEngine(DiscountingEngine):
     def get_price(self, bond:Bond):
@@ -70,11 +66,11 @@ class FuturesDiscountingEngine(DiscountingEngine):
     def get_pv01(self, futures:InterestRateFutures):
         return {"pv01": pv01(curve=self.curve, engine=FuturesDiscountingEngine, instrument=futures)}
 
-    def get_bucket_pv01(self, futures:InsterestRateFutures, date:dt.date):
+    def get_bucket_pv01(self, futures:InterestRateFutures, date:dt.date):
         t = self.curve.get_time_from_reference(date)
         return {f"bucket_pv01_{t:.1f}Y": bucket_pv01(curve=self.curve, engine=FuturesDiscountingEngine, instrument=futures, date=date)}
 
-def pv01(curve:YieldCurve, engine:DiscountingEngine, instrument:cls):
+def pv01(curve:YieldCurve, engine:DiscountingEngine, instrument):
     bump = 0.0001
     curve_down = curve.parallel_shift(-bump)
     curve_up = curve.parallel_shift(bump)
@@ -86,7 +82,7 @@ def pv01(curve:YieldCurve, engine:DiscountingEngine, instrument:cls):
         engine_up.get_price(instrument)["value"]
     return (v_down - v_up) / 2
 
-def bucket_pv01(curve:YieldCurve, engine:DiscountingEngine, instrument:cls, date:dt.date):
+def bucket_pv01(curve:YieldCurve, engine:DiscountingEngine, instrument, date:dt.date):
     bump = 0.0001
     curve_down = curve.key_rate_shift(date, -bump)
     curve_up = curve.key_rate_shift(date, bump)

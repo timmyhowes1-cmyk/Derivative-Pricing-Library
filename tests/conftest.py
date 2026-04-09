@@ -1,7 +1,8 @@
 import pytest
-from instruments.equity import Vanilla
-from engines.equity.analytical import *
-from models.equity import *
+from instruments import Vanilla
+from term_structure import FlatYieldCurve, Actual360
+from engines import *
+from models import *
 
 @pytest.fixture
 def vanilla_call():
@@ -43,5 +44,9 @@ def heston_analytical_engine():
 
 @pytest.fixture
 def binomial_tree():
-    BinomialTree(timestep=1/252)
+    return BinomialTree(timestep=1/252)
+
+@pytest.fixture
+def std_flat_curve():
+    return FlatYieldCurve(reference_date=dt.date(2025, 1, 1), date_convention=Actual360(), flat_rate=0.05, compounding="continuous")
 

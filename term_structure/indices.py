@@ -1,8 +1,8 @@
 import datetime as dt
 from abc import ABC, abstractmethod
-from term_structure.cashflow_schedule import add_months
-from term_structure.date_convention import DateConvention
-from term_structure.curves import YieldCurve
+from .cashflow_schedule import add_months
+from .date_convention import DateConvention
+from .curves import YieldCurve
 
 class InterestRateIndex(ABC):
     def __init__(self, name, date_convention:DateConvention, forward_curve:YieldCurve):

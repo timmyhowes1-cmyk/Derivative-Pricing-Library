@@ -1,9 +1,10 @@
 import copy
 from abc import ABC, abstractmethod
+from typing import Union
 import numpy as np
 import bisect
 import datetime as dt
-from term_structure.date_convention import DateConvention
+from .date_convention import DateConvention
 
 class YieldCurve(ABC):
     def __init__(self, reference_date:dt.date, date_convention:DateConvention, compounding:str="continuous"):
@@ -12,10 +13,12 @@ class YieldCurve(ABC):
         self.compounding = compounding
 
     @abstractmethod
-    def get_discount_factor(self, t:float):
+    def get_discount_factor(self, t:Union[dt.date, float]):
         pass
 
-    def get_zero_rate(self, t:float):
+    def get_zero_rate(self, t:Union[dt.date, float]):
+        if isinstance(t, dt.date):
+            t = self.get_time_from_reference(t)
         if t <= 0:
             raise ValueError("t must be positive for zero_rate")
         df = self.get_discount_factor(t)
@@ -29,7 +32,12 @@ class YieldCurve(ABC):
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
-    def get_forward_rate(self, t1:float, t2:float):
+    def get_forward_rate(self, t1:Union[dt.date, float], t2:Union[dt.date, float]):
+        if isinstance(t1, dt.date):
+            t1 = self.get_time_from_reference(t1)
+        if isinstance(t2, dt.date):
+            t2 = self.get_time_from_reference(t2)
+
         if t2 <= t1:
             raise ValueError("Need t2 > t1 for forward_rate")
         df1 = self.get_discount_factor(t1)
@@ -41,7 +49,7 @@ class YieldCurve(ABC):
         elif self.compounding == "annual":
             return (df1 / df2) ** (1 / t_diff) - 1
         elif self.compounding == "simple":
-            return (1 - df2 / df1) / t
+            return (1 / df2 - 1 / df1) / t_diff
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
@@ -53,7 +61,10 @@ class FlatYieldCurve(YieldCurve):
         super().__init__(reference_date, date_convention, compounding)
         self.flat_rate = flat_rate
 
-    def get_discount_factor(self, t:float):
+    def get_discount_factor(self, t:Union[dt.date, float]):
+        if isinstance(t, dt.date):
+            t = self.get_time_from_reference(t)
+
         if self.compounding == "continuous":
             return np.exp(-self.flat_rate * t)
         elif self.compounding == "annual":
@@ -70,7 +81,7 @@ class FlatYieldCurve(YieldCurve):
 
 
 class PiecewiseLinearDiscountCurve(YieldCurve):
-    def __init__(self, reference_date:dt.date, date_convention:DateConvention, times:np.ndarray, discount_factors:np.ndarray, compounding:str="continuous"):
+    def __init__(self, reference_date:dt.date, date_convention:DateConvention, times:Union[list, np.ndarray], discount_factors:np.ndarray, compounding:str="continuous"):
         super().__init__(reference_date, date_convention, compounding)
         if len(times) != len(discount_factors):
             raise ValueError("Times and discount_factors must have same length")
@@ -79,7 +90,10 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
         self.times = times
         self.discount_factors = discount_factors
 
-    def get_discount_factor(self, t:float):
+    def get_discount_factor(self, t:Union[dt.date, float]):
+        if isinstance(t, dt.date):
+            t = self.get_time_from_reference(t)
+
         if t <= self.times[0]:
             return self.discount_factors[0]
         if t >= self.times[-1]:
@@ -91,7 +105,10 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
         w = (t - t1) / (t2 - t1)
         return np.exp(np.log(df1) + w * (np.log(df2) - np.log(df1)))
 
-    def set_discount_factor(self, t:float, discount_factor:float, tol:float=1e-6):
+    def set_discount_factor(self, t:Union[dt.datetime, float], discount_factor:float, tol:float=1e-6):
+        if isinstance(t, dt.date):
+            t = self.get_time_from_reference(t)
+
         if isinstance(self.times, np.ndarray):
             idx = np.where(np.abs(self.times - t) < tol)[0]
             if len(idx) == 0:
@@ -121,9 +138,10 @@ class PiecewiseLinearDiscountCurve(YieldCurve):
         new_curve.discount_factors = np.array(new_dfs)
         return new_curve
 
-    def key_rate_shift(self, date:dt.date, bump:float=0.0001):
+    def key_rate_shift(self, t:Union[float, dt.date], bump:float=0.0001):
         new_curve = copy.deepcopy(self)
-        t_target = self.get_time_from_reference(date)
+        if isinstance(t, dt.date):
+            t_target = self.get_time_from_reference(t)
         t_nearby = [t for t in new_curve.times if (abs(t - t_target) < 0.5)]
         for t in t_nearby:
             r_new = new_curve.get_zero_rate(t) + bump

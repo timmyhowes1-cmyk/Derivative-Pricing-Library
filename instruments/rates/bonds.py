@@ -8,13 +8,13 @@ class Bond():
         self.cashflows = cashflows
 
     def get_maturity(self):
-        return max(cashflows.payment_dates())
+        return max(self.cashflows.payment_dates())
 
     def get_payment_dates(self):
-        return cashflows.payment_dates()
+        return self.cashflows.payment_dates()
 
     def get_maturity_date(self):
-        return cashflows.payment_dates()[-1]
+        return self.cashflows.payment_dates()[-1]
 
 class FixedRateBond(Bond):
     def __init__(self, notional, schedule:Schedule, coupon_rate:float, date_convention:DateConvention):
@@ -27,7 +27,7 @@ class FixedRateBond(Bond):
         self.date_convention = date_convention
 
 class PlainFRN(Bond):
-    def __init__(self, notional, schedule:Schedule, index:InterestRateIndex, spread:float=0.0):
+    def __init__(self, notional:float, schedule:Schedule, index:InterestRateIndex, spread:float=0.0):
         coupons = make_floating_leg(schedule=schedule, notional=notional, index=index, spread=spread)
         coupons.cashflows.append(Redemption(payment_date=schedule.dates[-1], notional=notional))
 

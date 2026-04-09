@@ -1,5 +1,6 @@
 from dateutil import relativedelta
 import dateutil
+import datetime as dt
 from term_structure.cashflow_schedule import Schedule
 from term_structure.curves import YieldCurve
 from term_structure.cashflows import Leg, Redemption, make_fixed_leg, make_floating_leg
@@ -25,7 +26,7 @@ class InterestRateSwap:
         return 1 if self.pay_fixed else -1
 
 class FRA(InterestRateSwap):
-    def __init__(self, notional:float, settlement_date:dt.date):
+    def __init__(self, notional:float, settlement_date:dt.date, fixed_leg:Leg, floating_leg:Leg, pay_fixed:bool=True):
         self.settlement_date = settlement_date
         super().__init__(fixed_leg, floating_leg, pay_fixed)
 
@@ -39,19 +40,21 @@ def make_fra(notional:float, settlement_date:dt.date, accrual_start_date:dt.date
                    fixed_date_convention:DateConvention, pay_fixed:bool=True, spread:float=0.0):
     schedule = Schedule(start_date=accrual_start_date, end_date=accrual_end_date,
                         months_per_period=months_between(accrual_start_date, accrual_end_date))
-    fixed_leg = make_fixed_leg(schedule=schedule, notional=notional, rate=fixed_rate, date_convention=date_convention)
+    fixed_leg = make_fixed_leg(schedule=schedule, notional=notional, rate=fixed_rate, date_convention=fixed_date_convention)
     floating_leg = make_floating_leg(schedule=schedule, notional=notional, index=index, spread=spread)
-    return FRA(settlement_date=settlement_date, fixed_leg=fixed_leg, floating_leg=floating_leg, pay_fixed=pay_fixed)
+    return FRA(notional=notional, settlement_date=settlement_date, fixed_leg=fixed_leg, floating_leg=floating_leg, pay_fixed=pay_fixed)
 
 def par_swap_rate(schedule:Schedule, curve:YieldCurve):
     maturity = schedule.end_date
     t_end = curve.get_time_from_reference(maturity)
-    numerator = 1 - curve.get_discount_factor(t_end)
-    denominator = 0
+    numerator, denominator = 0, 0
     for accrual_start_date, accrual_end_date in schedule.periods():
+        fwd_rate = curve.get_forward_rate(accrual_start_date, accrual_end_date)
         t_accrual = curve.date_convention.get_year_fraction(accrual_start_date, accrual_end_date)
         t_end = curve.get_time_from_reference(accrual_end_date)
-        denominator += t_accrual * curve.get_discount_factor(t_end)
+        df = curve.get_discount_factor(t_end)
+        numerator += t_accrual * fwd_rate * df
+        denominator += t_accrual * df
     return numerator / denominator
 
 def months_between(start:dt.date, end:dt.date):

@@ -1,7 +1,7 @@
 import datetime as dt
-from term_structure.cashflow_schedule import Schedule
-from term_structure.date_convention import DateConvention
-from term_structure.indices import InterestRateIndex
+from .cashflow_schedule import Schedule
+from .date_convention import DateConvention
+from .indices import InterestRateIndex
 from abc import ABC, abstractmethod
 
 class Cashflow(ABC):
@@ -46,7 +46,7 @@ class FloatingRateCoupon(Cashflow):
         return fwd + self.spread
 
     def amount(self):
-        return self.notional * self.rate() * self.index.get_year_fraction(self.accrual_start_date, self.accrual_end_date)
+        return self.notional * self.rate() * self.index.date_convention.get_year_fraction(self.accrual_start_date, self.accrual_end_date)
 
 class Leg():
     def __init__(self, cashflows:Cashflow):

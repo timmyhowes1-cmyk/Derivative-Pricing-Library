@@ -1,8 +1,8 @@
 import datetime as dt
-from term_structure import InterestRateIndex
+from term_structure.indices import InterestRateIndex
 
 
-class InterestRateFuture:
+class InterestRateFutures:
     def __init__(self, notional:float, contract_date:dt.date, reference_start_date:dt.date, reference_end_date:dt.date, index:InterestRateIndex,
                  futures_price:float, convexity_adjustment:float=0.0):
         self.notional = notional

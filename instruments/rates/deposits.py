@@ -1,4 +1,8 @@
+import datetime as dt
+from term_structure.date_convention import DateConvention
+from term_structure.cashflows import Leg, Redemption
 from .bonds import Bond
+
 class Deposit(Bond):
     ...
 

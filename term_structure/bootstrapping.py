@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import scipy.optimize as opt
-from term_structure.curves import *
-from term_structure.date_conventions import DateConvention
-from instruments.rates import Deposit, Bond, InterestRateSwap
+from .curves import *
+from .date_convention import DateConvention
+from instruments.rates.deposits import Deposit, SimpleDeposit
+from instruments.rates.bonds import Bond
+from instruments.rates.swaps import InterestRateSwap
+from instruments.rates.futures import InterestRateFutures
 
 class RateHelper(ABC):
     @abstractmethod
