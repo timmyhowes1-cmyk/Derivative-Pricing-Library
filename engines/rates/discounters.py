@@ -60,8 +60,7 @@ class FuturesDiscountingEngine(DiscountingEngine):
         market_fwd = futures.implied_forward_rate()
 
         payoff = self.notional * (market_fwd - fwd_rate) / 100
-        t_contract = self.curve.get_time_from_reference(futures.contract_date)
-        return {"value": curve.get_discount_factor(t_contract) * payoff}
+        return {"value": curve.get_discount_factor(futures.contract_date) * payoff}
 
     def get_pv01(self, futures:InterestRateFutures):
         return {"pv01": pv01(curve=self.curve, engine=FuturesDiscountingEngine, instrument=futures)}
@@ -98,8 +97,7 @@ def bucket_pv01(curve:YieldCurve, engine:DiscountingEngine, instrument, date:dt.
 def calculate_leg_npv(leg:Leg, curve:YieldCurve):
     total = 0
     for cf in leg.cashflows:
-        t = curve.get_time_from_reference(cf.payment_date)
-        df = curve.get_discount_factor(t)  # or discount(t) via time_from_reference
+        df = curve.get_discount_factor(cf.payment_date)
         total += cf.amount() * df
     return total
 

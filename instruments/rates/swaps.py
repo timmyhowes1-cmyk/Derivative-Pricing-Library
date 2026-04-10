@@ -44,16 +44,14 @@ def make_fra(notional:float, settlement_date:dt.date, accrual_start_date:dt.date
     floating_leg = make_floating_leg(schedule=schedule, notional=notional, index=index, spread=spread)
     return FRA(notional=notional, settlement_date=settlement_date, fixed_leg=fixed_leg, floating_leg=floating_leg, pay_fixed=pay_fixed)
 
-def par_swap_rate(schedule:Schedule, curve:YieldCurve):
+def par_swap_rate(schedule:Schedule, discount_curve:YieldCurve, forward_curve:YieldCurve):
     maturity = schedule.end_date
-    t_end = curve.get_time_from_reference(maturity)
     numerator, denominator = 0, 0
     for accrual_start_date, accrual_end_date in schedule.periods():
-        fwd_rate = curve.get_forward_rate(accrual_start_date, accrual_end_date)
-        t_accrual = curve.date_convention.get_year_fraction(accrual_start_date, accrual_end_date)
-        t_end = curve.get_time_from_reference(accrual_end_date)
-        df = curve.get_discount_factor(t_end)
-        numerator += t_accrual * fwd_rate * df
+        fwd_rate = forward_curve.get_forward_rate(accrual_start_date, accrual_end_date)
+        t_accrual = discount_curve.date_convention.get_year_fraction(accrual_start_date, accrual_end_date)
+        df = discount_curve.get_discount_factor(accrual_end_date)
+        numerator += fwd_rate * t_accrual * df
         denominator += t_accrual * df
     return numerator / denominator
 

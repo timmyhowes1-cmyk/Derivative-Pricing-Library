@@ -13,6 +13,9 @@ class InterestRateFutures:
         self.futures_price = futures_price
         self.convexity_adjustment = convexity_adjustment
 
+    def get_maturity_date(self):
+        return self.reference_end_date
+
     def implied_forward_rate(self):
         implied_rate = 100 - self.futures_price
         return implied_rate / 100 + self.convexity_adjustment

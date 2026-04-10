@@ -48,5 +48,5 @@ def binomial_tree():
 
 @pytest.fixture
 def std_flat_curve():
-    return FlatYieldCurve(reference_date=dt.date(2025, 1, 1), date_convention=Actual360(), flat_rate=0.05, compounding="continuous")
+    return FlatYieldCurve(reference_date=dt.date(2025, 1, 1), date_convention=Actual360(), flat_rate=0.05, compounding="annual")
 

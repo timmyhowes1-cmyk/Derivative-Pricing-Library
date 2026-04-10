@@ -11,7 +11,7 @@ def test_fra_flat_curve_par_rate(std_flat_curve):
                    fixed_date_convention=Actual360())
     engine = SwapDiscountingEngine(std_flat_curve)
     npv = engine.get_price(fra)["value"]
-    assert npv == pytest.approx(0, 1e-10)
+    assert npv == pytest.approx(0, abs=1e-10)
 
 
 def test_fra_flat_curve_off_rate(std_flat_curve):
@@ -23,4 +23,4 @@ def test_fra_flat_curve_off_rate(std_flat_curve):
     true_npv = df * (0.05 - 0.06) * t / (1 + 0.05 * t)
     engine = SwapDiscountingEngine(std_flat_curve)
     model_npv = engine.get_price(fra)["value"]
-    assert model_npv == pytest.approx(true_npv, 1e-10)
+    assert model_npv == pytest.approx(true_npv, abs=1e-10)

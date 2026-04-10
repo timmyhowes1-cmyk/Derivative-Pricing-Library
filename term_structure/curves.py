@@ -49,7 +49,7 @@ class YieldCurve(ABC):
         elif self.compounding == "annual":
             return (df1 / df2) ** (1 / t_diff) - 1
         elif self.compounding == "simple":
-            return (1 / df2 - 1 / df1) / t_diff
+            return (df1 / df2 - 1) / t_diff
         else:
             raise ValueError(f"Unknown compounding: {self.compounding}")
 
