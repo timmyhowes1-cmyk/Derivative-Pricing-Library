@@ -22,7 +22,7 @@ def std_heston_model():
         mean_vol=0.2,
         reversion_speed=2,
         sigma=0.3,
-        correlation=-0.7,
+        covariance=np.array([[1, -0.7], [-0.7, 1]])
     )
 
 @pytest.fixture

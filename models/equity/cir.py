@@ -16,7 +16,7 @@ class CIR(Model):
 
     def generate_paths(self, iterations:int, timestep:float, expiry:float, dw:np.ndarray=None, antithetic_variates=False, scheme:str="ModifiedMilsteinCIR"):
         if dw is None:
-            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, correlation=None, antithetic_variates=antithetic_variates)
+            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, cov=None, antithetic_variates=antithetic_variates)
 
         scheme_to_use = scheme_to_run = retrieve_scheme(scheme_name=scheme, x0=self.x0, a=self.theta * self.k, reversion_speed=self.k, sigma=self.sigma)
         return scheme_to_use.get_paths(dt=timestep, dw=dw)

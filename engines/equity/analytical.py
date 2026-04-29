@@ -86,15 +86,15 @@ class HestonAnalyticalEngine(Engine):
         self.p2 = None
 
     def setup_heston_params(self, instrument:EquityOption, model:Model):
-        self.b = [model.reversion_speed - model.correlation * model.sigma, model.reversion_speed]
+        self.b = [model.reversion_speed - model.covariance[0, 1] * model.sigma, model.reversion_speed]
         self.u = [0.5, -0.5]
         self.char_func1 = lambda phi: (self.psi(phi=phi, t=instrument.T, r=model.r, q=model.q,
-                                                rho=model.correlation,
+                                                rho=model.covariance[0, 1],
                                                 a=(model.mean_vol ** 2) * model.reversion_speed,
                                                 sigma=model.sigma, b=self.b[0], u=self.u[0],
                                                 x0=np.log(model.x0), v0=model.vol ** 2))
         self.char_func2 = lambda phi: (self.psi(phi=phi, t=instrument.T, r=model.r, q=model.q,
-                                                rho=model.correlation,
+                                                rho=model.covariance[0, 1],
                                                 a=(model.mean_vol ** 2) * model.reversion_speed,
                                                 sigma=model.sigma, b=self.b[1], u=self.u[1],
                                                 x0=np.log(model.x0), v0=model.vol ** 2))
@@ -140,8 +140,8 @@ class HestonAnalyticalEngine(Engine):
                 else np.exp(-model.q * instrument.T) * (self.p1 - 1))
 
     def calculate_vega(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
-        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[1], u=self.u[1])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.covariance[0, 1], sigma=model.sigma, b=self.b[0], u=self.u[0])
+        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.covariance[0, 1], sigma=model.sigma, b=self.b[1], u=self.u[1])
 
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (phi * 1j) * (
                                     model.x0 * np.exp(-model.q * instrument.T) * self.char_func1(phi) * _d1(phi)
@@ -160,28 +160,28 @@ class HestonAnalyticalEngine(Engine):
         term1 = (model.q * model.x0 * np.exp(-model.q * instrument.T) * self.p1
                 - model.r * instrument.K * np.exp(-model.r * instrument.T) * self.p2)
 
-        _d1 = lambda phi: self.d(phi=phi, rho=model.correlation, b=self.b[0], u=self.u[0], sigma=model.sigma)
-        _g1 = lambda phi: self.g(phi=phi, rho=model.correlation, b=self.b[0], u=self.u[0], sigma=model.sigma)
-        _d2 = lambda phi: self.d(phi=phi, rho=model.correlation, b=self.b[1], u=self.u[1], sigma=model.sigma)
-        _g2 = lambda phi: self.g(phi=phi, rho=model.correlation, b=self.b[1], u=self.u[1], sigma=model.sigma)
+        _d1 = lambda phi: self.d(phi=phi, rho=model.covariance[0, 1], b=self.b[0], u=self.u[0], sigma=model.sigma)
+        _g1 = lambda phi: self.g(phi=phi, rho=model.covariance[0, 1], b=self.b[0], u=self.u[0], sigma=model.sigma)
+        _d2 = lambda phi: self.d(phi=phi, rho=model.covariance[0, 1], b=self.b[1], u=self.u[1], sigma=model.sigma)
+        _g2 = lambda phi: self.g(phi=phi, rho=model.covariance[0, 1], b=self.b[1], u=self.u[1], sigma=model.sigma)
 
         _dC1 = lambda phi: (1j * (model.r - model.q) * phi
                             + (model.mean_vol**2 * model.reversion_speed / model.sigma**2)
-                            * ((self.b[0] - model.correlation * model.sigma * 1j * phi + _d1(phi))
+                            * ((self.b[0] - model.covariance[0, 1] * model.sigma * 1j * phi + _d1(phi))
                             + (2 * _g1(phi) * _d1(phi) * np.exp(instrument.T * _d1(phi)))
                                / (1 - _g1(phi) * np.exp(instrument.T * _d1(phi)))))
         _dC2 = lambda phi: (1j * (model.r - model.q) * phi
                             + (model.mean_vol**2 * model.reversion_speed / model.sigma**2)
-                            * ((self.b[1] - model.correlation * model.sigma * 1j * phi + _d2(phi))
+                            * ((self.b[1] - model.covariance[0, 1] * model.sigma * 1j * phi + _d2(phi))
                             + (2 * _g2(phi) * _d2(phi) * np.exp(instrument.T * _d2(phi)))
                                / (1 - _g2(phi) * np.exp(instrument.T * _d2(phi)))))
         _dD1 = lambda phi: (
-                ((self.b[0] - model.correlation * model.sigma * 1j * phi + _d1(phi)) / model.sigma**2)
+                ((self.b[0] - model.covariance[0, 1] * model.sigma * 1j * phi + _d1(phi)) / model.sigma**2)
                 * ((-_d1(phi) * np.exp(instrument.T * _d1(phi)) * (1 - _g1(phi)))
                     / ((1 - _g1(phi) * np.exp(instrument.T * _d1(phi))) ** 2))
         )
         _dD2 = lambda phi: (
-                ((self.b[1] - model.correlation * model.sigma * 1j * phi + _d2(phi)) / model.sigma ** 2)
+                ((self.b[1] - model.covariance[0, 1] * model.sigma * 1j * phi + _d2(phi)) / model.sigma ** 2)
                 * ((-_d2(phi) * np.exp(instrument.T * _d2(phi)) * (1 - _g2(phi)))
                    / ((1 - _g2(phi) * np.exp(instrument.T * _d2(phi))) ** 2))
         )
@@ -210,8 +210,8 @@ class HestonAnalyticalEngine(Engine):
         return scale * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
 
     def calculate_volga(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
-        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[1], u=self.u[1])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.covariance[0, 1], sigma=model.sigma, b=self.b[0], u=self.u[0])
+        _d2 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.covariance[0, 1], sigma=model.sigma, b=self.b[1], u=self.u[1])
 
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (phi * 1j) * (
                                  model.x0 * np.exp(-model.q * instrument.T) * self.char_func1(phi) * (_d1(phi) + 2 * (model.vol *  _d1(phi)) ** 2)
@@ -222,7 +222,7 @@ class HestonAnalyticalEngine(Engine):
 
 
     def calculate_vanna(self, instrument:EquityOption, model:Model):
-        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.correlation, sigma=model.sigma, b=self.b[0], u=self.u[0])
+        _d1 = lambda phi: self.D(phi=phi, t=instrument.T, rho=model.covariance[0, 1], sigma=model.sigma, b=self.b[0], u=self.u[0])
         integrand = lambda phi: (np.exp(-phi * np.log(instrument.K) * 1j) / (1j * phi) * self.char_func1(phi) * _d1(phi)).real
         term = np.exp(-model.q * instrument.T) * quad(integrand, self.phi_bounds[0], self.phi_bounds[1])[0]
         return (2 * model.vol / np.pi) * term

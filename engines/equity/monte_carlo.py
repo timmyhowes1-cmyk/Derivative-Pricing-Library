@@ -24,8 +24,7 @@ class MonteCarloEngine(Engine):
         return {"value":np.mean(samples), "std_error":np.std(samples, ddof=1) / np.sqrt(self.iterations)}
 
     def get_greeks(self, instrument:EquityOption, model:Model, greek_type:Union[list, str]):
-        corr = getattr(model, 'correlation', None)
-        dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, correlation=corr, antithetic_variates=self.antithetic_variates)
+        dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, cov=getattr(model, 'covariance', None), antithetic_variates=self.antithetic_variates)
         paths = model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw, antithetic_variates=self.antithetic_variates)
 
         greeks = {}
@@ -128,7 +127,7 @@ class MonteCarloEngine(Engine):
     def calculate_theta(self, instrument:EquityOption, model:Model, bump_size:float, dw:np.ndarray=None, paths:np.ndarray=None):
         timestep = bump_size if bump_size is not None else self.timestep
         if abs(timestep - self.timestep) > 1e-10:
-            dw = generate_wiener_increments(n=self.iterations, dt=timestep, expiry=instrument.T, correlation=getattr(model, 'correlation', None), antithetic_variates=self.antithetic_variates)
+            dw = generate_wiener_increments(n=self.iterations, dt=timestep, expiry=instrument.T, cov=getattr(model, 'covariance', None), antithetic_variates=self.antithetic_variates)
             paths = model.generate_paths(iterations=self.iterations, timestep=timestep, expiry=instrument.T, dw=dw)
         else:
             dw, paths = self._ensure_paths(instrument=instrument, model=model, dw=dw, paths=paths)
@@ -136,7 +135,12 @@ class MonteCarloEngine(Engine):
         new_instrument = copy.deepcopy(instrument)
         new_instrument.T += -timestep
         new_model = copy.deepcopy(model)
-        bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=timestep, expiry=new_instrument.T, dw=dw[..., :-1])
+        if np.ndim(dw) <= 2:
+            bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=timestep,
+                                                    expiry=new_instrument.T, dw=dw[..., :-1])
+        else:
+            bumped_paths = new_model.generate_paths(iterations=self.iterations, timestep=timestep,
+                                                    expiry=new_instrument.T, dw=dw[:, :-1, :])
 
         if instrument.european:
             p0 = np.exp(-model.r * instrument.T) * instrument.payoff(paths)
@@ -184,7 +188,7 @@ class MonteCarloEngine(Engine):
         Returns: (dw, paths)
         """
         if dw is None:
-            dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, correlation=model.correlation, antithetic_variates=self.antithetic_variates)
+            dw = generate_wiener_increments(n=self.iterations, dt=self.timestep, expiry=instrument.T, cov=getattr(model, 'covariance', None), antithetic_variates=self.antithetic_variates)
 
         if paths is None:
             paths = model.generate_paths(iterations=self.iterations, timestep=self.timestep, expiry=instrument.T, dw=dw)

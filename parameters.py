@@ -45,7 +45,7 @@ params_heston = {"x0": 8,
                  "mean_vol": 0.2,
                  "reversion_speed": 2,
                  "sigma": 0.3,
-                 "correlation": -0.7,
+                 "covariance": np.array([[1, -0.7], [-0.7, 1]]),
                  "price_scheme": "EulerForPrices",
                  "var_scheme":"ModifiedMilsteinCIR"}
 

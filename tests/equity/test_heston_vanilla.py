@@ -13,7 +13,7 @@ from engines.equity.analytical import HestonAnalyticalEngine
     ],
 )
 def test_heston_call_prices(vanilla_call, heston_analytical_engine, spot, expected):
-    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, covariance=np.array([[1, -0.7], [-0.7, 1]]))
     price = heston_analytical_engine.get_price(vanilla_call, model)["value"]
     assert price == pytest.approx(expected, abs=1e-7)
 
@@ -27,7 +27,7 @@ def test_heston_call_prices(vanilla_call, heston_analytical_engine, spot, expect
     ],
 )
 def test_heston_put_prices(vanilla_put, heston_analytical_engine, spot, expected):
-    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, covariance=np.array([[1, -0.7], [-0.7, 1]]))
     price = heston_analytical_engine.get_price(vanilla_put, model)["value"]
     assert price == pytest.approx(expected, abs=1e-7)
 
@@ -60,7 +60,7 @@ def test_heston_put_prices(vanilla_put, heston_analytical_engine, spot, expected
     ],
 )
 def test_heston_call_greeks(vanilla_call, heston_analytical_engine, greek, spot, expected):
-    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, covariance=np.array([[1, -0.7], [-0.7, 1]]))
     greeks = heston_analytical_engine.get_greeks(vanilla_call, model, greek_type=greek)
     result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
     assert result == pytest.approx(expected, abs=1e-7)
@@ -93,7 +93,7 @@ def test_heston_call_greeks(vanilla_call, heston_analytical_engine, greek, spot,
     ],
 )
 def test_heston_put_greeks(vanilla_put, heston_analytical_engine, greek, spot, expected):
-    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, correlation=-0.7)
+    model = Heston(x0=spot, vol=0.2, r=0.01, q=0.01, mean_vol=0.2, reversion_speed=2, sigma=0.3, covariance=np.array([[1, -0.7], [-0.7, 1]]))
     greeks = heston_analytical_engine.get_greeks(vanilla_put, model, greek_type=greek)
     result = [greeks[k] for k in greeks.keys()] if isinstance(greek, list) else greeks[greek]
     assert result == pytest.approx(expected, abs=1e-7)

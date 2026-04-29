@@ -12,7 +12,7 @@ class BSM(Model):
     def generate_paths(self, iterations:int, timestep:float, expiry:float, dw:np.ndarray=None, antithetic_variates:bool=False):
         t = np.linspace(0, expiry, int(round(expiry / timestep)) + 1)
         if dw is None:
-            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, antithetic_variates=antithetic_variates)
+            dw = generate_wiener_increments(n=iterations, dt=timestep, expiry=expiry, cov=None, antithetic_variates=antithetic_variates)
         w = np.zeros((dw.shape[0], dw.shape[1] + 1))
         w[:, 1:] = np.cumsum(dw, axis=1)
 

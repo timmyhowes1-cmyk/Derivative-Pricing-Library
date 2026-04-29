@@ -43,22 +43,34 @@ def generate_standard_normal(size):
     rng = np.random.default_rng()
     return rng.standard_normal(size)
 
-def generate_wiener_increments(n, dt, expiry, correlation=None, antithetic_variates=False):
-    gen_func = get_antithetic_stdnormal if antithetic_variates else generate_standard_normal
-    dw = np.sqrt(dt) * gen_func((n, int(round(expiry / dt))))
+def generate_multi_stdnormal(cov, size):
+    rng = np.random.default_rng()
+    n_variables = cov.shape[0]
+    assert np.all(np.diagonal(cov) == 1), "Covariance matrix must have diagonal entries equal to 1"
+    return rng.multivariate_normal(np.zeros(n_variables), cov, size=size)
 
-    if correlation is not None:
-        shocks = gen_func((n, int(round(expiry / dt))))
-        dw2 = correlation * dw + np.sqrt(1 - correlation ** 2) * np.sqrt(dt) * shocks
-        return np.array([dw, dw2])
+def generate_wiener_increments(n, dt, expiry, cov=None, antithetic_variates=False):
+    gen_func = get_antithetic_stdnormal if antithetic_variates else generate_multi_normal
+    if cov is not None:
+        assert np.all(np.diagonal(cov) == 1), "Covariance matrix must have diagonal entries equal to 1"
+    size = (n, int(round(expiry / dt)))
+    dw = np.sqrt(dt) * gen_func(cov, size=size)
     return dw
 
-def get_antithetic_stdnormal(shape):
-    split = int(shape[0] // 2)
-    shocks = generate_standard_normal((split, shape[1]))
-    shocks = np.concatenate([shocks, -shocks], axis=0)
-    return shocks if shape[0] % 2 == 0 \
-        else np.concatenate([shocks, generate_standard_normal((1, shape[1]))], axis=0)
+def get_antithetic_stdnormal(cov, size):
+    split = int(size[-2] // 2)
+    new_size = list(size[:])
+    new_size[-2] = split
+    new_size = tuple(new_size)
+    shocks = generate_standard_normal(new_size) if cov is None else generate_multi_stdnormal(cov, new_size)
+    shocks = np.concatenate([shocks, -shocks], axis=-2)
+
+    if size[0] % 2 == 0:
+        return shocks
+    elif cov is not None:
+        return np.concatenate([shocks, generate_multi_stdnormal(cov, size=(1, size[-1]))], axis=0)
+    else:
+        return np.concatenate([shocks, generate_standard_normal(size=(1, size[-1]))], axis=0)
 
 def format_for_scheme(param, shape):
     if isinstance(param, float) or isinstance(param, int):
