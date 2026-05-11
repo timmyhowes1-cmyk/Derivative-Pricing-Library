@@ -37,7 +37,7 @@ The project was built to strengthen practical skills in:
 
 ## Architecture
 
-The code follows a modular object-oriented design:
+The code follows an object-oriented design:
 
 - **Instrument classes** define payoff and contract specifications
 - **Model classes** define market dynamics and model parameters
@@ -53,7 +53,3 @@ Current functionality includes:
 - Analytical and numerical result comparison for BSM and Heston models
 - Extensible pricing engine framework
 
-
-## Why I Built This
-
-I built this project to deepen my understanding of derivative pricing, quantitative modelling, and Python software design. The goal was not only to price instruments, but to design a codebase that reflects how a reusable quant library might be structured in practice.
