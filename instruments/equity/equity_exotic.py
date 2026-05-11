@@ -1,4 +1,5 @@
-from instruments.equity.base import EquityOption
+from .base import EquityOption
+from .equity_vanilla import Vanilla
 from utils.math_utils import expanding_mean_axis1
 import numpy as np
 from typing import Union
@@ -65,34 +66,59 @@ class Digital(EquityOption):
             else self.cash_payoff * (self.K - spot_to_use > 0)
 
 class Barrier(EquityOption):
-    def __init__(self, strike, expiry, call, b:float=None, up:bool=True, out:bool=True, **kwargs):
+    def __init__(self, strike, expiry, call, option_type:EquityOption=Vanilla, b:Union[float, list, np.ndarray]=None, up:bool=True, out:bool=True, **kwargs):
         super().__init__(strike, expiry, call)
-        self.b = self.K if b is None else b
+        self.option_type = option_type(strike, expiry, call, **kwargs)
+        self.b = self.strike if b is None else b
         self.up = up
         self.out = out
         self.raiseStrikeError()
-        if self.b < 0:
-            raise ValueError("Barrier must be non-negative")
+        self.raiseBarrierError()
 
     def _get_barrier_flag(self, price_path:Union[float, np.ndarray]):
         if self.european:
-            extreme = np.max(price_path, axis=np.ndim(price_path) - 1) if self.up \
-                else np.min(price_path, axis=np.ndim(price_path) - 1)
+            min_path = np.min(price_path, axis=-1)
+            max_path = np.max(price_path, axis=-1)
         else:
-            extreme = np.maximum.accumulate(price_path, axis=1) if self.up \
-                else np.mininum.accumulate(price_path, axis=1)
-        if self.up and self.out:
-            return extreme <= self.b
-        elif not self.up and not self.out:
-            return extreme < self.b
-        elif self.up and not self.out:
-            return extreme > self.b
-        else:
-            return extreme >= self.b
+            min_path = np.minimum.accumulate(price_path, axis=1)
+            max_path = np.maximum.accumulate(price_path, axis=1)
+
+        def flag_single(b, up, out):
+            extreme = max_path if up else min_path
+            if up and out:
+                return extreme <= b
+            elif not up and not out:
+                return extreme < b
+            elif up and not out:
+                return extreme > b
+            else:
+                return extreme >= b
+
+        if np.isscalar(self.b):
+            return flag_single(self.b, self.up, self.out)
+        else: # all barrier conditions must be True for any payoff
+            flags = []
+            for i in range(len(self.b)):
+                flags.append(flag_single(self.b[i], self.up[i], self.out[i]))
+
+            flags = np.stack(flags, axis=0)
+            return np.all(flags, axis=0)
 
     def payoff(self, price_path:Union[float, np.ndarray]):
         self.raisePriceError(price_path)
         flag = self._get_barrier_flag(price_path)
         spot_to_use = self.get_payoff_spot(price_path)
-        return flag * np.maximum(spot_to_use - self.K, 0) if self.call \
-            else flag * np.maximum(self.K - spot_to_use, 0)
+        return flag * self.option_type.payoff(spot_to_use)
+
+    def raiseBarrierError(self):
+        if np.isscalar(self.b):
+            if np.any(self.b < 0):
+                raise ValueError("Barrier must be non-negative")
+        elif isinstance(self.b, np.ndarray) or isinstance(self.b, list):
+            if self.b[0] == self.b[1]:
+                raise ValueError("Multiple barriers entered and are equal. Just enter one")
+            assert len(self.b) == len(self.up), "Up flag and barrier length mismatch"
+            assert len(self.b) == len(self.out), "Out flag and barrier length mismatch"
+        return None
+
+

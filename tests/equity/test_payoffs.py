@@ -138,7 +138,7 @@ def test_digital_put_payoff_scalar(spot, strike, payoff, expected):
     ],
 )
 def test_barrier_call_payoff_scalar(spot, strike, barrier, up, out, expected):
-    option = Barrier(strike=strike, expiry=1, call=True, european=True, b=barrier, up=up, out=out)
+    option = Barrier(strike=strike, expiry=1, call=True, option_type=Vanilla, european=True, b=barrier, up=up, out=out)
     assert option.payoff(spot) == pytest.approx(expected)
 
 
@@ -158,5 +158,5 @@ def test_barrier_call_payoff_scalar(spot, strike, barrier, up, out, expected):
     ],
 )
 def test_barrier_put_payoff_scalar(spot, strike, barrier, up, out, expected):
-    option = Barrier(strike=strike, expiry=1, call=False, european=True, b=barrier, up=up, out=out)
+    option = Barrier(strike=strike, expiry=1, call=False, option_type=Vanilla, european=True, b=barrier, up=up, out=out)
     assert option.payoff(spot) == pytest.approx(expected)

@@ -1,4 +1,5 @@
 import numpy as np
+from instruments.equity.equity_vanilla import Vanilla
 
 ### EQUITY PARAMETERS ###
 # bump sizes for MC greeks
@@ -15,9 +16,10 @@ params_equity = {"strike": 10,
                      "expiry": 1,
                      "call": False,
                      "european": True,
-                     "b": 12,
-                     "up": True,
-                     "out": True,
+                     "b": [5, 11],
+                     "option_type": Vanilla,
+                     "up": [False, True],
+                     "out": [False, True],
                      "arithmetic_mean": True,
                      "fixed_strike": True,
                      "cash_payoff": 10}
