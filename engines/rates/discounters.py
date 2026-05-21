@@ -1,6 +1,7 @@
 import copy
 from abc import abstractmethod
 import datetime as dt
+import numpy as np
 from term_structure.curves import YieldCurve
 from term_structure.cashflows import Leg
 from .base import DiscountingEngine
@@ -95,11 +96,9 @@ def bucket_pv01(curve:YieldCurve, engine:DiscountingEngine, instrument, date:dt.
     return {f"bucket_pv01_{t}Y": (v_down - v_up) / 2}
 
 def calculate_leg_npv(leg:Leg, curve:YieldCurve):
-    total = 0
-    for cf in leg.cashflows:
-        df = curve.get_discount_factor(cf.payment_date)
-        total += cf.amount() * df
-    return total
+    amounts = np.array([cf.amount() for cf in leg.cashflows])
+    dfs = np.array([curve.get_discount_factor(cf.payment_date) for cf in leg.cashflows])
+    return float(np.dot(amounts, dfs))
 
 def calculate_fra_npv(fra:FRA, curve:YieldCurve):
     fwd_rate = fra.floating_leg.cashflows[0].rate()

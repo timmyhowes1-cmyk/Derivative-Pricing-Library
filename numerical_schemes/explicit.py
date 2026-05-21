@@ -1,5 +1,4 @@
 from .base import NumericalScheme, standard_drift_vol, itself
-from utils.math_utils import format_for_scheme
 import numpy as np
 
 class Euler(NumericalScheme):
@@ -13,13 +12,11 @@ class Euler(NumericalScheme):
     def get_paths(self, dt:float, dw:np.ndarray):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
-
-        mu = format_for_scheme(self.mu, x.shape)
-        sigma = format_for_scheme(param=self.sigma, shape=x.shape)
-
         for i in range(1, x.shape[1]):
-            x[:, i] = x[:, i-1] + self.f_drift(mu[:, i-1], x[:, i-1], i*dt) * dt + self.f_vol(sigma[:, i-1], x[:, i-1], i*dt) * dw[:, i-1]
-
+            t = i * dt
+            x[:, i] = (x[:, i-1]
+                       + self.f_drift(self.mu, x[:, i-1], t) * dt
+                       + self.f_vol(self.sigma, x[:, i-1], t) * dw[:, i-1])
         return x
 
 class Milstein(NumericalScheme):
@@ -34,19 +31,14 @@ class Milstein(NumericalScheme):
     def get_paths(self, dt, dw):
         x = np.zeros((dw.shape[0], dw.shape[1] + 1))
         x[:, 0] = self.x0
-
-        mu = format_for_scheme(param=self.mu, shape=x.shape)
-        sigma = format_for_scheme(param=self.sigma, shape=x.shape)
-
         for i in range(1, x.shape[1]):
-            b = self.f_drift(mu=mu[:, i-1], x=x[:, i-1], t=i*dt)
-            v = self.f_vol(sigma=sigma[:, i-1], x=x[:, i-1], t=i*dt)
-            if self.vol_derivative is not None:
-                db = self.vol_derivative(mu=mu[:, i-1], x=x[:, i-1], t=i*dt)
-            else:
-                db = self.get_vol_x_derivative(x=x[:, i-1], t=i*dt)
+            t = i * dt
+            b = self.f_drift(mu=self.mu, x=x[:, i-1], t=t)
+            v = self.f_vol(sigma=self.sigma, x=x[:, i-1], t=t)
+            db = (self.vol_derivative(mu=self.mu, x=x[:, i-1], t=t)
+                  if self.vol_derivative is not None
+                  else self.get_vol_x_derivative(x=x[:, i-1], t=t))
             x[:, i] = x[:, i-1] + b * dt + v * dw[:, i-1] + 0.5 * b * db * (dw[:, i-1] ** 2 - i * dt)
-
         return x
 
     def get_vol_x_derivative(self, x, t, h=1e-5):
@@ -62,16 +54,14 @@ class EulerForPrices(NumericalScheme):
         self.vol = sigma
 
     def get_paths(self, dt:float, dw:np.ndarray):
-        x = np.zeros((dw.shape[0], dw.shape[1] + 1))
-        x[:, 0] = self.x0
-
-        drift = format_for_scheme(param=self.drift, shape=x.shape)
-        vol = format_for_scheme(param=self.vol, shape=x.shape)
-
-        for i in range(1, x.shape[1]):
-            x[:, i] = x[:, i-1] * np.exp((drift[:, i-1] - 0.5 * vol[:, i-1]**2) * dt + vol[:, i-1] * dw[:, i-1])
-
-        return x
+        n_paths, n_steps = dw.shape
+        # vol may be a path-dependent array (e.g. stochastic vol); align to dw's time axis
+        vol = self.vol[:, :n_steps] if isinstance(self.vol, np.ndarray) else self.vol
+        log_increments = (self.drift - 0.5 * vol**2) * dt + vol * dw
+        paths = np.empty((n_paths, n_steps + 1))
+        paths[:, 0] = self.x0
+        paths[:, 1:] = self.x0 * np.exp(np.cumsum(log_increments, axis=1))
+        return paths
 
 class ModifiedMilsteinCIR(NumericalScheme):
     def __init__(self, x0, a:float, reversion_speed:float, sigma:float):
